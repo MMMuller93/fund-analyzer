@@ -457,77 +457,88 @@ const FundAnalyzer = () => {
   return (
     <div className="min-h-screen bg-white">
       <div className="border-b sticky top-0 z-10 bg-white">
-        <div className="max-w-7xl mx-auto px-8 py-6">
-          <div className="grid grid-cols-3 gap-6 mb-6">
-            {/* Leaderboards */}
-            <div className="bg-white border rounded-xl p-4 shadow-sm hover:shadow-md transition-shadow">
-              <div className="flex items-center gap-2 mb-3">
-                <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
-                  <AwardIcon />
-                </div>
-                <h3 className="font-semibold text-gray-900">Largest AUM</h3>
-              </div>
-              <div className="space-y-2">
-                {adviserLeaderboards.top10AUM.slice(0, 5).map((adv) => (
-                  <div key={adv.CRD} className="flex items-start justify-between gap-2">
-                    <div className="flex items-start gap-2 flex-1">
-                      <span className="text-sm font-semibold text-gray-900 mt-0.5">{adv.rank_2024}</span>
-                      <span className="text-xs text-green-600 font-semibold mt-1">+{adv.rank_change_2y}</span>
-                      <span className="text-sm font-medium text-gray-900 break-words">{adv.Adviser_Name}</span>
-                    </div>
-                    <span className="text-sm font-semibold text-gray-900 whitespace-nowrap">{formatCurrency(adv.Total_AUM, false)}</span>
+        <div className="max-w-7xl mx-auto px-8 py-4">
+          <div className="overflow-x-auto">
+            <div className="flex gap-4 pb-4" style={{minWidth: 'fit-content'}}>
+              {/* Leaderboards */}
+              <div className="bg-white border rounded-lg p-3 shadow-sm hover:shadow-md transition-shadow" style={{minWidth: '280px'}}>
+                <div className="flex items-center gap-2 mb-2">
+                  <div className="w-6 h-6 bg-blue-100 rounded-lg flex items-center justify-center">
+                    <AwardIcon />
                   </div>
-                ))}
-              </div>
-            </div>
-
-            <div className="bg-white border rounded-xl p-4 shadow-sm hover:shadow-md transition-shadow">
-              <div className="flex items-center gap-2 mb-3">
-                <div className="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center">
-                  <TrendingUpIcon />
+                  <h3 className="text-sm font-semibold text-gray-900">Largest AUM</h3>
                 </div>
-                <h3 className="font-semibold text-gray-900">Highest % Growth (2y)</h3>
-              </div>
-              <div className="space-y-2">
-                {adviserLeaderboards.top10Growth.slice(0, 5).map((adv, idx) => (
-                  <div key={adv.CRD} className="flex flex-col gap-1">
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="flex items-start gap-2 flex-1">
-                        <span className="text-sm font-semibold text-gray-900 mt-0.5">{idx + 1}</span>
-                        <span className="text-sm font-medium text-gray-900 break-words">{adv.Adviser_Name}</span>
+                <div className="space-y-1.5">
+                  {adviserLeaderboards.top10AUM.slice(0, 3).map((adv) => (
+                    <div key={adv.CRD} className="flex items-start justify-between gap-2">
+                      <div className="flex items-start gap-1.5 flex-1">
+                        <span className="text-xs font-semibold text-gray-900">{adv.rank_2024}</span>
+                        <span className="text-xs font-medium text-gray-900 break-words">{adv.Adviser_Name}</span>
                       </div>
-                      <span className="text-sm font-semibold text-green-600 whitespace-nowrap">+{adv.growth_rate_2y?.toFixed(1)}%</span>
+                      <span className="text-xs font-semibold text-gray-900 whitespace-nowrap">{formatCurrency(adv.calculated_aum_2024 || adv.Total_AUM, false)}</span>
                     </div>
-                    <div className="text-xs text-gray-500 ml-6">
-                      {formatCurrency(adv.calculated_aum_2022, false)} → {formatCurrency(adv.calculated_aum_2024, false)}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            <div className="bg-white border rounded-xl p-4 shadow-sm hover:shadow-md transition-shadow">
-              <div className="flex items-center gap-2 mb-3">
-                <div className="w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center">
-                  <TrendingUpIcon />
+                  ))}
                 </div>
-                <h3 className="font-semibold text-gray-900">Largest $ Growth (2y)</h3>
               </div>
-              <div className="space-y-2">
-                {adviserLeaderboards.top10AbsoluteGrowth.slice(0, 5).map((adv, idx) => (
-                  <div key={adv.CRD} className="flex flex-col gap-1">
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="flex items-start gap-2 flex-1">
-                        <span className="text-sm font-semibold text-gray-900 mt-0.5">{idx + 1}</span>
-                        <span className="text-sm font-medium text-gray-900 break-words">{adv.Adviser_Name}</span>
-                      </div>
-                      <span className="text-sm font-semibold text-purple-600 whitespace-nowrap">+{formatCurrency(adv.absolute_growth_2y, false)}</span>
-                    </div>
-                    <div className="text-xs text-gray-500 ml-6">
-                      {formatCurrency(adv.calculated_aum_2022, false)} → {formatCurrency(adv.calculated_aum_2024, false)}
-                    </div>
+
+              <div className="bg-white border rounded-lg p-3 shadow-sm hover:shadow-md transition-shadow" style={{minWidth: '280px'}}>
+                <div className="flex items-center gap-2 mb-2">
+                  <div className="w-6 h-6 bg-green-100 rounded-lg flex items-center justify-center">
+                    <TrendingUpIcon />
                   </div>
-                ))}
+                  <h3 className="text-sm font-semibold text-gray-900">Highest % Growth (2y)</h3>
+                </div>
+                <div className="space-y-1.5">
+                  {adviserLeaderboards.top10Growth.slice(0, 3).map((adv, idx) => (
+                    <div key={adv.CRD} className="flex items-start justify-between gap-2">
+                      <div className="flex items-start gap-1.5 flex-1">
+                        <span className="text-xs font-semibold text-gray-900">{idx + 1}</span>
+                        <span className="text-xs font-medium text-gray-900 break-words">{adv.Adviser_Name}</span>
+                      </div>
+                      <span className="text-xs font-semibold text-green-600 whitespace-nowrap">+{adv.growth_rate_2y?.toFixed(1)}%</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="bg-white border rounded-lg p-3 shadow-sm hover:shadow-md transition-shadow" style={{minWidth: '280px'}}>
+                <div className="flex items-center gap-2 mb-2">
+                  <div className="w-6 h-6 bg-purple-100 rounded-lg flex items-center justify-center">
+                    <TrendingUpIcon />
+                  </div>
+                  <h3 className="text-sm font-semibold text-gray-900">Largest $ Growth (2y)</h3>
+                </div>
+                <div className="space-y-1.5">
+                  {adviserLeaderboards.top10AbsoluteGrowth.slice(0, 3).map((adv, idx) => (
+                    <div key={adv.CRD} className="flex items-start justify-between gap-2">
+                      <div className="flex items-start gap-1.5 flex-1">
+                        <span className="text-xs font-semibold text-gray-900">{idx + 1}</span>
+                        <span className="text-xs font-medium text-gray-900 break-words">{adv.Adviser_Name}</span>
+                      </div>
+                      <span className="text-xs font-semibold text-purple-600 whitespace-nowrap">+{formatCurrency(adv.absolute_growth_2y, false)}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="bg-white border rounded-lg p-3 shadow-sm hover:shadow-md transition-shadow" style={{minWidth: '280px'}}>
+                <div className="flex items-center gap-2 mb-2">
+                  <div className="w-6 h-6 bg-orange-100 rounded-lg flex items-center justify-center">
+                    <TrendingUpIcon />
+                  </div>
+                  <h3 className="text-sm font-semibold text-gray-900">Highest AUM % Growth (2y)</h3>
+                </div>
+                <div className="space-y-1.5">
+                  {adviserLeaderboards.top10Growth.slice(0, 3).map((adv, idx) => (
+                    <div key={adv.CRD} className="flex items-start justify-between gap-2">
+                      <div className="flex items-start gap-1.5 flex-1">
+                        <span className="text-xs font-semibold text-gray-900">{idx + 1}</span>
+                        <span className="text-xs font-medium text-gray-900 break-words">{adv.Adviser_Name}</span>
+                      </div>
+                      <span className="text-xs font-semibold text-orange-600 whitespace-nowrap">+{adv.growth_rate_2y?.toFixed(1)}%</span>
+                    </div>
+                  ))}
+                </div>
               </div>
             </div>
           </div>
@@ -603,11 +614,9 @@ const FundAnalyzer = () => {
                       <div
                         key={activeTab === 'advisers' ? item.CRD : `${item.Fund_ID}-${idx}`}
                         onClick={() => {
+                          setSelectedItem(item);
                           if (activeTab === 'advisers') {
                             setSelectedAdviser(item);
-                            setSelectedItem(item);
-                          } else {
-                            setSelectedItem(item);
                           }
                           setSearchTerm('');
                         }}
@@ -637,7 +646,7 @@ const FundAnalyzer = () => {
             {selectedItem && (
               <div className="bg-white rounded-xl border shadow-sm p-8">
                 <button
-                  onClick={() => setSelectedItem(null)}
+                  onClick={() => { setSelectedItem(null); setSelectedAdviser(null); }}
                   className="mb-6 flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors"
                 >
                   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -878,9 +887,9 @@ const FundAnalyzer = () => {
                     >
                       <td className="px-6 py-4 text-sm font-semibold text-gray-900">{idx + 1}</td>
                       <td className="px-6 py-4 text-sm text-gray-900 font-medium">{adv.Adviser_Name}</td>
-                      <td className="px-6 py-4 text-sm text-right font-semibold text-gray-900">{formatCurrency(adv.Total_AUM)}</td>
-                      <td className={`px-6 py-4 text-sm text-right font-semibold ${adv.growth_rate_2y >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                        {adv.growth_rate_2y ? `${adv.growth_rate_2y >= 0 ? '+' : ''}${adv.growth_rate_2y.toFixed(1)}%` : 'N/A'}
+                      <td className="px-6 py-4 text-sm text-right font-semibold text-gray-900">{formatCurrency(adv.calculated_aum_2024 || adv.Total_AUM)}</td>
+                      <td className={`px-6 py-4 text-sm text-right font-semibold ${(adv.growth_rate_2y || 0) >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                        {adv.growth_rate_2y !== null && adv.growth_rate_2y !== undefined ? `${adv.growth_rate_2y >= 0 ? '+' : ''}${adv.growth_rate_2y.toFixed(1)}%` : 'N/A'}
                       </td>
                       <td className={`px-6 py-4 text-sm text-right font-semibold ${adv.rank_change_2y > 0 ? 'text-green-600' : adv.rank_change_2y < 0 ? 'text-red-600' : 'text-gray-600'}`}>
                         {adv.rank_change_2y > 0 ? `↑ ${adv.rank_change_2y}` : adv.rank_change_2y < 0 ? `↓ ${Math.abs(adv.rank_change_2y)}` : '—'}
