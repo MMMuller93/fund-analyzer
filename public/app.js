@@ -775,15 +775,40 @@ const FundAnalyzer = () => {
                   <table className="w-full">
                     <thead className="bg-gray-50 border-b">
                       <tr>
-                        <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Fund Name</th>
-                        <th className="px-6 py-4 text-right text-xs font-semibold text-gray-600 uppercase tracking-wider">Current GAV</th>
-                        <th className="px-6 py-4 text-right text-xs font-semibold text-gray-600 uppercase tracking-wider">1Y Growth</th>
-                        <th className="px-6 py-4 text-right text-xs font-semibold text-gray-600 uppercase tracking-wider">2Y Growth</th>
-                        <th className="px-6 py-4 text-right text-xs font-semibold text-gray-600 uppercase tracking-wider">5Y Growth</th>
+                        <th
+                          className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
+                          onClick={() => handleAdviserFundsSort('Fund_Name')}
+                        >
+                          Fund Name {adviserFundsSortConfig.key === 'Fund_Name' && (adviserFundsSortConfig.direction === 'asc' ? '↑' : '↓')}
+                        </th>
+                        <th
+                          className="px-6 py-4 text-right text-xs font-semibold text-gray-600 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
+                          onClick={() => handleAdviserFundsSort('Latest_Gross_Asset_Value')}
+                        >
+                          Current GAV {adviserFundsSortConfig.key === 'Latest_Gross_Asset_Value' && (adviserFundsSortConfig.direction === 'asc' ? '↑' : '↓')}
+                        </th>
+                        <th
+                          className="px-6 py-4 text-right text-xs font-semibold text-gray-600 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
+                          onClick={() => handleAdviserFundsSort('growth_1y')}
+                        >
+                          1Y Growth {adviserFundsSortConfig.key === 'growth_1y' && (adviserFundsSortConfig.direction === 'asc' ? '↑' : '↓')}
+                        </th>
+                        <th
+                          className="px-6 py-4 text-right text-xs font-semibold text-gray-600 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
+                          onClick={() => handleAdviserFundsSort('growth_2y')}
+                        >
+                          2Y Growth {adviserFundsSortConfig.key === 'growth_2y' && (adviserFundsSortConfig.direction === 'asc' ? '↑' : '↓')}
+                        </th>
+                        <th
+                          className="px-6 py-4 text-right text-xs font-semibold text-gray-600 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
+                          onClick={() => handleAdviserFundsSort('growth_5y')}
+                        >
+                          5Y Growth {adviserFundsSortConfig.key === 'growth_5y' && (adviserFundsSortConfig.direction === 'asc' ? '↑' : '↓')}
+                        </th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-200">
-                      {fundsForAdviser.map((fund, idx) => (
+                      {sortedAdviserFunds.map((fund, idx) => (
                         <tr 
                           key={`${fund.Fund_ID}-${idx}`}
                           className="hover:bg-gray-50 transition-colors cursor-pointer"
@@ -791,14 +816,35 @@ const FundAnalyzer = () => {
                         >
                           <td className="px-6 py-4 text-sm text-gray-900 font-medium">{fund.Fund_Name}</td>
                           <td className="px-6 py-4 text-sm text-right font-semibold text-gray-900">{formatCurrency(fund.Latest_Gross_Asset_Value)}</td>
-                          <td className={`px-6 py-4 text-sm text-right font-semibold ${fund.growth_1y >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                            {fund.growth_1y ? `${fund.growth_1y >= 0 ? '+' : ''}${fund.growth_1y.toFixed(1)}%` : 'N/A'}
+                          <td className="px-6 py-4 text-right">
+                            <div className={`text-sm font-semibold ${fund.growth_1y >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                              {fund.growth_1y ? `${fund.growth_1y >= 0 ? '+' : ''}${fund.growth_1y.toFixed(1)}%` : 'N/A'}
+                            </div>
+                            {fund.GAV_2023 && fund.GAV_2024 && (
+                              <div className="text-xs text-gray-500 mt-1">
+                                {formatCurrency(fund.GAV_2023)} → {formatCurrency(fund.GAV_2024)}
+                              </div>
+                            )}
                           </td>
-                          <td className={`px-6 py-4 text-sm text-right font-semibold ${fund.growth_2y >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                            {fund.growth_2y ? `${fund.growth_2y >= 0 ? '+' : ''}${fund.growth_2y.toFixed(1)}%` : 'N/A'}
+                          <td className="px-6 py-4 text-right">
+                            <div className={`text-sm font-semibold ${fund.growth_2y >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                              {fund.growth_2y ? `${fund.growth_2y >= 0 ? '+' : ''}${fund.growth_2y.toFixed(1)}%` : 'N/A'}
+                            </div>
+                            {fund.GAV_2022 && fund.GAV_2024 && (
+                              <div className="text-xs text-gray-500 mt-1">
+                                {formatCurrency(fund.GAV_2022)} → {formatCurrency(fund.GAV_2024)}
+                              </div>
+                            )}
                           </td>
-                          <td className={`px-6 py-4 text-sm text-right font-semibold ${fund.growth_5y >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                            {fund.growth_5y ? `${fund.growth_5y >= 0 ? '+' : ''}${fund.growth_5y.toFixed(1)}%` : 'N/A'}
+                          <td className="px-6 py-4 text-right">
+                            <div className={`text-sm font-semibold ${fund.growth_5y >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                              {fund.growth_5y ? `${fund.growth_5y >= 0 ? '+' : ''}${fund.growth_5y.toFixed(1)}%` : 'N/A'}
+                            </div>
+                            {fund.GAV_2019 && fund.GAV_2024 && (
+                              <div className="text-xs text-gray-500 mt-1">
+                                {formatCurrency(fund.GAV_2019)} → {formatCurrency(fund.GAV_2024)}
+                              </div>
+                            )}
                           </td>
                         </tr>
                       ))}
@@ -838,6 +884,66 @@ const FundAnalyzer = () => {
                       </td>
                       <td className={`px-6 py-4 text-sm text-right font-semibold ${adv.rank_change_2y > 0 ? 'text-green-600' : adv.rank_change_2y < 0 ? 'text-red-600' : 'text-gray-600'}`}>
                         {adv.rank_change_2y > 0 ? `↑ ${adv.rank_change_2y}` : adv.rank_change_2y < 0 ? `↓ ${Math.abs(adv.rank_change_2y)}` : '—'}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'fund-rankings' && (
+          <div className="bg-white rounded-xl border shadow-sm overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead className="bg-gray-50 border-b">
+                  <tr>
+                    <th
+                      className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
+                      onClick={() => handleSort('rank')}
+                    >
+                      Rank {sortConfig.key === 'rank' && (sortConfig.direction === 'asc' ? '↑' : '↓')}
+                    </th>
+                    <th
+                      className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
+                      onClick={() => handleSort('Fund_Name')}
+                    >
+                      Fund Name {sortConfig.key === 'Fund_Name' && (sortConfig.direction === 'asc' ? '↑' : '↓')}
+                    </th>
+                    <th
+                      className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
+                      onClick={() => handleSort('Adviser_Entity_Legal_Name')}
+                    >
+                      Adviser {sortConfig.key === 'Adviser_Entity_Legal_Name' && (sortConfig.direction === 'asc' ? '↑' : '↓')}
+                    </th>
+                    <th
+                      className="px-6 py-4 text-right text-xs font-semibold text-gray-600 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
+                      onClick={() => handleSort('Latest_Gross_Asset_Value')}
+                    >
+                      GAV {sortConfig.key === 'Latest_Gross_Asset_Value' && (sortConfig.direction === 'asc' ? '↑' : '↓')}
+                    </th>
+                    <th
+                      className="px-6 py-4 text-right text-xs font-semibold text-gray-600 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
+                      onClick={() => handleSort('growth_2y')}
+                    >
+                      2Y Growth {sortConfig.key === 'growth_2y' && (sortConfig.direction === 'asc' ? '↑' : '↓')}
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-200">
+                  {sortedRankings.slice(0, 100).map((fund) => (
+                    <tr
+                      key={fund.Fund_ID}
+                      className="hover:bg-gray-50 transition-colors cursor-pointer"
+                      onClick={() => { setSelectedItem(fund); setActiveTab('funds'); }}
+                    >
+                      <td className="px-6 py-4 text-sm font-semibold text-gray-900">{fund.rank}</td>
+                      <td className="px-6 py-4 text-sm text-gray-900 font-medium">{fund.Fund_Name}</td>
+                      <td className="px-6 py-4 text-sm text-gray-900">{fund.Adviser_Entity_Legal_Name}</td>
+                      <td className="px-6 py-4 text-sm text-right font-semibold text-gray-900">{formatCurrency(fund.Latest_Gross_Asset_Value, false)}</td>
+                      <td className={`px-6 py-4 text-sm text-right font-semibold ${fund.growth_2y >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                        {fund.growth_2y ? `${fund.growth_2y >= 0 ? '+' : ''}${fund.growth_2y.toFixed(1)}%` : 'N/A'}
                       </td>
                     </tr>
                   ))}
