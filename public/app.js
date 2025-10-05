@@ -30,6 +30,12 @@ const SteppedAreaChart = ({ data, label }) => {
   useEffect(() => {
     if (!canvasRef.current || data.length === 0) return;
 
+    // Check if Chart.js is loaded
+    if (typeof Chart === 'undefined') {
+      console.error('Chart.js is not loaded!');
+      return;
+    }
+
     // Destroy existing chart
     if (chartRef.current) {
       chartRef.current.destroy();
