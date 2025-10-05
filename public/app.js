@@ -48,6 +48,15 @@ const FundAnalyzer = () => {
     loadInitialData();
   }, []);
 
+  // Parse currency string like "$60,317,287" to number 60317287
+  const parseCurrency = (value) => {
+    if (!value || value === '') return null;
+    if (typeof value === 'number') return value;
+    // Remove $, commas, and convert to number
+    const parsed = parseFloat(value.toString().replace(/[$,]/g, ''));
+    return isNaN(parsed) ? null : parsed;
+  };
+
   const loadInitialData = async () => {
     try {
       setLoading(true);
@@ -71,17 +80,20 @@ const FundAnalyzer = () => {
       fundsData.forEach(fund => {
         const crd = fund.Adviser_Entity_CRD;
         if (!crd) return;
-        
+
         if (!fundTotalsByCRD[crd]) {
           fundTotalsByCRD[crd] = 0;
           fundYearlyTotalsByCRD[crd] = {};
         }
-        
-        fundTotalsByCRD[crd] += fund.Latest_Gross_Asset_Value || 0;
-        
+
+        const latestGAV = parseCurrency(fund.Latest_Gross_Asset_Value);
+        if (latestGAV) {
+          fundTotalsByCRD[crd] += latestGAV;
+        }
+
         const years = ['2011', '2012', '2013', '2014', '2015', '2016', '2017', '2018', '2019', '2020', '2021', '2022', '2023', '2024'];
         years.forEach(year => {
-          const gav = fund[`GAV_${year}`];
+          const gav = parseCurrency(fund[`GAV_${year}`]);
           if (gav) {
             if (!fundYearlyTotalsByCRD[crd][year]) {
               fundYearlyTotalsByCRD[crd][year] = 0;
@@ -94,22 +106,33 @@ const FundAnalyzer = () => {
       const enrichedAdvisers = advisersData
         .filter(a => a.Adviser_Name)
         .map(adv => {
-          let totalAUM = adv.Total_AUM;
+          // Parse Total_AUM from string to number
+          let totalAUM = parseCurrency(adv.Total_AUM);
           let aumByYear = {};
-          
+
+          // Parse yearly AUM values from adviser data
+          const years = ['2011', '2012', '2013', '2014', '2015', '2016', '2017', '2018', '2019', '2020', '2021', '2022', '2023', '2024'];
+          years.forEach(year => {
+            const adviserYearAUM = parseCurrency(adv[`AUM_${year}`]);
+            if (adviserYearAUM) {
+              aumByYear[`AUM_${year}`] = adviserYearAUM;
+            }
+          });
+
+          // If no Total_AUM from adviser table, use sum of fund GAVs
           if (!totalAUM && fundTotalsByCRD[adv.CRD]) {
             totalAUM = fundTotalsByCRD[adv.CRD];
-            
-            const years = ['2011', '2012', '2013', '2014', '2015', '2016', '2017', '2018', '2019', '2020', '2021', '2022', '2023', '2024'];
+
+            // If no yearly AUM from adviser, use fund totals
             years.forEach(year => {
-              if (fundYearlyTotalsByCRD[adv.CRD]?.[year]) {
+              if (!aumByYear[`AUM_${year}`] && fundYearlyTotalsByCRD[adv.CRD]?.[year]) {
                 aumByYear[`AUM_${year}`] = fundYearlyTotalsByCRD[adv.CRD][year];
               }
             });
           }
 
-          const aum2022 = aumByYear.AUM_2022 || adv.AUM_2022;
-          const aum2024 = aumByYear.AUM_2024 || adv.AUM_2024 || totalAUM;
+          const aum2022 = aumByYear.AUM_2022;
+          const aum2024 = aumByYear.AUM_2024 || totalAUM;
 
           return {
             ...adv,
@@ -125,18 +148,31 @@ const FundAnalyzer = () => {
 
       const enrichedFunds = fundsData
         .filter(f => f.Fund_Name && f.Latest_Gross_Asset_Value)
-        .map(fund => ({
-          ...fund,
-          growth_1y: fund.GAV_2023 && fund.GAV_2024 && fund.GAV_2023 > 0
-            ? ((fund.GAV_2024 - fund.GAV_2023) / fund.GAV_2023) * 100
-            : null,
-          growth_2y: fund.GAV_2022 && fund.GAV_2024 && fund.GAV_2022 > 0
-            ? ((fund.GAV_2024 - fund.GAV_2022) / fund.GAV_2022) * 100
-            : null,
-          growth_5y: fund.GAV_2019 && fund.GAV_2024 && fund.GAV_2019 > 0
-            ? ((fund.GAV_2024 - fund.GAV_2019) / fund.GAV_2019) * 100
-            : null
-        }));
+        .map(fund => {
+          const latestGAV = parseCurrency(fund.Latest_Gross_Asset_Value);
+          const gav2019 = parseCurrency(fund.GAV_2019);
+          const gav2022 = parseCurrency(fund.GAV_2022);
+          const gav2023 = parseCurrency(fund.GAV_2023);
+          const gav2024 = parseCurrency(fund.GAV_2024);
+
+          return {
+            ...fund,
+            Latest_Gross_Asset_Value: latestGAV,
+            GAV_2019: gav2019,
+            GAV_2022: gav2022,
+            GAV_2023: gav2023,
+            GAV_2024: gav2024,
+            growth_1y: gav2023 && gav2024 && gav2023 > 0
+              ? ((gav2024 - gav2023) / gav2023) * 100
+              : null,
+            growth_2y: gav2022 && gav2024 && gav2022 > 0
+              ? ((gav2024 - gav2022) / gav2022) * 100
+              : null,
+            growth_5y: gav2019 && gav2024 && gav2019 > 0
+              ? ((gav2024 - gav2019) / gav2019) * 100
+              : null
+          };
+        });
 
       setAdvisers(enrichedAdvisers);
       setFunds(enrichedFunds);
