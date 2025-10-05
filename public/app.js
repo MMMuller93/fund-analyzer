@@ -114,15 +114,14 @@ const FundAnalyzer = () => {
           return {
             ...adv,
             ...aumByYear,
-            Total_AUM: totalAUM,
-            calculated_aum_2024: aum2024,
-            calculated_aum_2022: aum2022,
+            Total_AUM: totalAUM || 0,
+            calculated_aum_2024: aum2024 || 0,
+            calculated_aum_2022: aum2022 || 0,
             growth_rate_2y: aum2022 && aum2024 && aum2022 > 0
               ? ((aum2024 - aum2022) / aum2022) * 100
               : null
           };
-        })
-        .filter(a => a.Total_AUM);
+        });
 
       const enrichedFunds = fundsData
         .filter(f => f.Fund_Name && f.Latest_Gross_Asset_Value)
@@ -238,10 +237,12 @@ const FundAnalyzer = () => {
   }, [funds, selectedAdviser]);
 
   const formatCurrency = (value) => {
-    if (!value) return 'N/A';
+    if (value === null || value === undefined || isNaN(value)) return 'N/A';
+    if (value === 0) return '$0';
     if (value >= 1e9) return `$${(value / 1e9).toFixed(2)}B`;
     if (value >= 1e6) return `$${(value / 1e6).toFixed(2)}M`;
-    return `$${(value / 1e3).toFixed(2)}K`;
+    if (value >= 1e3) return `$${(value / 1e3).toFixed(2)}K`;
+    return `$${value.toFixed(2)}`;
   };
 
   const getChartData = (item, isFund = false) => {
