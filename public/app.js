@@ -34,6 +34,7 @@ const FundAnalyzer = () => {
   const [loading, setLoading] = useState(true);
   const [searchResults, setSearchResults] = useState([]);
   const [searching, setSearching] = useState(false);
+  const [showAllSearchResults, setShowAllSearchResults] = useState(false);
   const [sortConfig, setSortConfig] = useState({ key: null, direction: 'desc' });
   const [adviserFundsSortConfig, setAdviserFundsSortConfig] = useState({ key: 'Latest_Gross_Asset_Value', direction: 'desc' });
 
@@ -228,70 +229,31 @@ const FundAnalyzer = () => {
   };
 
   useEffect(() => {
-    const performSearch = async () => {
+    const performSearch = () => {
       if (!searchTerm || searchTerm.trim().length === 0) {
         setSearchResults([]);
+        setShowAllSearchResults(false);
         return;
       }
 
       setSearching(true);
       try {
-        const term = searchTerm.trim();
-        
+        const term = searchTerm.trim().toLowerCase();
+
         if (activeTab === 'advisers') {
-          const res = await fetch(
-            `${SUPABASE_URL}/rest/v1/Advisers?or=(Adviser_Name.ilike.%25${encodeURIComponent(term)}%25,Adviser_Entity_Legal_Name.ilike.%25${encodeURIComponent(term)}%25)&limit=20`,
-            { headers: supabaseHeaders }
+          // Search through already-enriched advisers data
+          const results = advisers.filter(adv =>
+            adv.Adviser_Name?.toLowerCase().includes(term) ||
+            adv.Adviser_Entity_Legal_Name?.toLowerCase().includes(term)
           );
-
-          if (res.ok) {
-            const data = await res.json();
-            const enriched = data.map(adv => {
-              const totalAUM = parseCurrency(adv.Total_AUM);
-              const aum2024 = parseCurrency(adv.AUM_2024) || totalAUM;
-              const aum2022 = parseCurrency(adv.AUM_2022);
-
-              return {
-                ...adv,
-                Total_AUM: totalAUM,
-                calculated_aum_2024: aum2024,
-                growth_rate_2y: aum2022 && aum2024 && aum2022 > 0
-                  ? ((aum2024 - aum2022) / aum2022) * 100
-                  : null
-              };
-            });
-            setSearchResults(enriched);
-          }
+          setSearchResults(showAllSearchResults ? results : results.slice(0, 20));
         } else {
-          const res = await fetch(
-            `${SUPABASE_URL}/rest/v1/Funds?or=(Fund_Name.ilike.%25${encodeURIComponent(term)}%25,Adviser_Entity_Legal_Name.ilike.%25${encodeURIComponent(term)}%25)&limit=20`,
-            { headers: supabaseHeaders }
+          // Search through already-enriched funds data
+          const results = funds.filter(fund =>
+            fund.Fund_Name?.toLowerCase().includes(term) ||
+            fund.Adviser_Entity_Legal_Name?.toLowerCase().includes(term)
           );
-
-          if (res.ok) {
-            const data = await res.json();
-            const enriched = data.map(fund => {
-              const latestGAV = parseCurrency(fund.Latest_Gross_Asset_Value);
-              const gav2023 = parseCurrency(fund.GAV_2023);
-              const gav2024 = parseCurrency(fund.GAV_2024);
-              const gav2022 = parseCurrency(fund.GAV_2022);
-
-              return {
-                ...fund,
-                Latest_Gross_Asset_Value: latestGAV,
-                GAV_2023: gav2023,
-                GAV_2024: gav2024,
-                GAV_2022: gav2022,
-                growth_1y: gav2023 && gav2024 && gav2023 > 0
-                  ? ((gav2024 - gav2023) / gav2023) * 100
-                  : null,
-                growth_2y: gav2022 && gav2024 && gav2022 > 0
-                  ? ((gav2024 - gav2022) / gav2022) * 100
-                  : null
-              };
-            });
-            setSearchResults(enriched);
-          }
+          setSearchResults(showAllSearchResults ? results : results.slice(0, 20));
         }
       } catch (error) {
         console.error('Search error:', error);
@@ -302,7 +264,7 @@ const FundAnalyzer = () => {
 
     const debounce = setTimeout(performSearch, 300);
     return () => clearTimeout(debounce);
-  }, [searchTerm, activeTab]);
+  }, [searchTerm, activeTab, advisers, funds, showAllSearchResults]);
 
   const rankedAdvisers = useMemo(() => {
     // Include all advisers with AUM data (current or historical)
@@ -640,9 +602,15 @@ const FundAnalyzer = () => {
                 </div>
                 <input
                   type="text"
-                  placeholder={activeTab === 'advisers' ? 'Search adviser by name...' : 'Search fund by name...'}
+                  placeholder={activeTab === 'advisers' ? 'Search adviser by name... (Press Enter to see all results)' : 'Search fund by name... (Press Enter to see all results)'}
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && searchTerm.trim()) {
+                      setShowAllSearchResults(true);
+                      setSelectedItem(null);
+                    }
+                  }}
                   className="w-full pl-12 pr-4 py-3 border-2 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-gray-900 transition-all"
                 />
               </div>
@@ -671,8 +639,8 @@ const FundAnalyzer = () => {
                           )}
                         </div>
                         <div className="text-sm text-gray-600 mt-1">
-                          {activeTab === 'advisers' 
-                            ? `AUM: ${formatCurrency(item.Total_AUM)}${item.growth_rate_2y !== null ? ` • Growth: ${item.growth_rate_2y >= 0 ? '+' : ''}${item.growth_rate_2y.toFixed(1)}%` : ''}`
+                          {activeTab === 'advisers'
+                            ? `AUM: ${formatCurrency(item.calculated_aum_2024 || item.Total_AUM)}${item.growth_rate_2y !== null && item.growth_rate_2y !== undefined ? ` • Growth: ${item.growth_rate_2y >= 0 ? '+' : ''}${item.growth_rate_2y.toFixed(1)}%` : ''}`
                             : `GAV: ${formatCurrency(item.Latest_Gross_Asset_Value)} • Adviser: ${item.Adviser_Entity_Legal_Name}`
                           }
                         </div>
