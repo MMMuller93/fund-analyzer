@@ -34,6 +34,8 @@ const FundAnalyzer = () => {
   const [loading, setLoading] = useState(true);
   const [searchResults, setSearchResults] = useState([]);
   const [searching, setSearching] = useState(false);
+  const [sortConfig, setSortConfig] = useState({ key: null, direction: 'desc' });
+  const [adviserFundsSortConfig, setAdviserFundsSortConfig] = useState({ key: 'Latest_Gross_Asset_Value', direction: 'desc' });
 
   const SUPABASE_URL = 'https://iihbiatfjufnluwcgarz.supabase.co';
   const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlpaGJpYXRmanVmbmx1d2NnYXJ6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTk2MzQzMTMsImV4cCI6MjA3NTIxMDMxM30.tuYYgpLrXHReXbu2E1GYmxVnmrX3Wqgz8a5LkutI4mM';
@@ -292,6 +294,48 @@ const FundAnalyzer = () => {
     }));
   }, [advisers]);
 
+  const rankedFunds = useMemo(() => {
+    return [...funds]
+      .filter(f => f.Latest_Gross_Asset_Value)
+      .sort((a, b) => b.Latest_Gross_Asset_Value - a.Latest_Gross_Asset_Value)
+      .map((fund, idx) => ({
+        ...fund,
+        rank: idx + 1
+      }));
+  }, [funds]);
+
+  // Sorting function
+  const handleSort = (key) => {
+    let direction = 'desc';
+    if (sortConfig.key === key && sortConfig.direction === 'desc') {
+      direction = 'asc';
+    }
+    setSortConfig({ key, direction });
+  };
+
+  const sortedRankings = useMemo(() => {
+    const isAdvisers = activeTab === 'rankings';
+    if (!sortConfig.key) return isAdvisers ? rankedAdvisers : rankedFunds;
+
+    const dataToSort = isAdvisers ? [...rankedAdvisers] : [...rankedFunds];
+
+    dataToSort.sort((a, b) => {
+      let aVal = a[sortConfig.key];
+      let bVal = b[sortConfig.key];
+
+      if (aVal === null || aVal === undefined) return 1;
+      if (bVal === null || bVal === undefined) return -1;
+
+      if (sortConfig.direction === 'asc') {
+        return aVal > bVal ? 1 : -1;
+      } else {
+        return aVal < bVal ? 1 : -1;
+      }
+    });
+
+    return dataToSort;
+  }, [rankedAdvisers, rankedFunds, sortConfig, activeTab]);
+
   const adviserLeaderboards = useMemo(() => {
     const top10AUM = rankedAdvisers.slice(0, 10);
 
@@ -324,6 +368,32 @@ const FundAnalyzer = () => {
     if (!selectedAdviser) return [];
     return funds.filter(f => f.Adviser_Entity_CRD === selectedAdviser.CRD);
   }, [funds, selectedAdviser]);
+
+  const sortedAdviserFunds = useMemo(() => {
+    if (!adviserFundsSortConfig.key) return fundsForAdviser;
+
+    return [...fundsForAdviser].sort((a, b) => {
+      let aVal = a[adviserFundsSortConfig.key];
+      let bVal = b[adviserFundsSortConfig.key];
+
+      if (aVal === null || aVal === undefined) return 1;
+      if (bVal === null || bVal === undefined) return -1;
+
+      if (adviserFundsSortConfig.direction === 'asc') {
+        return aVal > bVal ? 1 : -1;
+      } else {
+        return aVal < bVal ? 1 : -1;
+      }
+    });
+  }, [fundsForAdviser, adviserFundsSortConfig]);
+
+  const handleAdviserFundsSort = (key) => {
+    let direction = 'desc';
+    if (adviserFundsSortConfig.key === key && adviserFundsSortConfig.direction === 'desc') {
+      direction = 'asc';
+    }
+    setAdviserFundsSortConfig({ key, direction });
+  };
 
   const formatCurrency = (value, useShortForm = true) => {
     if (value === null || value === undefined || isNaN(value)) return 'N/A';
@@ -484,14 +554,24 @@ const FundAnalyzer = () => {
               Funds
             </button>
             <button
-              onClick={() => { setActiveTab('rankings'); setSearchTerm(''); }}
+              onClick={() => { setActiveTab('rankings'); setSearchTerm(''); setSortConfig({ key: null, direction: 'desc' }); }}
               className={`px-6 py-3 font-medium transition-all ${
                 activeTab === 'rankings'
                   ? 'border-b-2 border-gray-900 text-gray-900'
                   : 'text-gray-500 hover:text-gray-700'
               }`}
             >
-              Rankings
+              Adviser Rankings
+            </button>
+            <button
+              onClick={() => { setActiveTab('fund-rankings'); setSearchTerm(''); setSortConfig({ key: null, direction: 'desc' }); }}
+              className={`px-6 py-3 font-medium transition-all ${
+                activeTab === 'fund-rankings'
+                  ? 'border-b-2 border-gray-900 text-gray-900'
+                  : 'text-gray-500 hover:text-gray-700'
+              }`}
+            >
+              Fund Rankings
             </button>
           </div>
         </div>
