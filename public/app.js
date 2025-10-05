@@ -151,15 +151,18 @@ const FundAnalyzer = () => {
             }
           });
 
-          // If no Total_AUM from adviser table, use sum of fund GAVs (latest value)
-          if (!totalAUM && fundTotalsByCRD[adv.CRD]) {
-            totalAUM = fundTotalsByCRD[adv.CRD];
+          // For calculated 2024 AUM, priority is:
+          // 1. Total_AUM (latest filing total from adviser) - ALWAYS PREFERRED
+          // 2. AUM_2024 (yearly column from adviser)
+          // 3. Sum of fund GAVs for 2024 (already in aumByYear.AUM_2024 from above loop)
+          const aum2024 = totalAUM || aumByYear.AUM_2024;
+
+          // If no Total_AUM from adviser, try to set it from fund GAVs as fallback for display
+          if (!totalAUM) {
+            totalAUM = aum2024 || fundTotalsByCRD[adv.CRD];
           }
 
-          // For calculated values, use yearly data (which already includes fund fallback from lines 144-152)
-          // Then use Total_AUM as last resort for 2024
           const aum2022 = aumByYear.AUM_2022;
-          const aum2024 = aumByYear.AUM_2024 || totalAUM;
 
           return {
             ...adv,
