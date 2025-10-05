@@ -528,6 +528,25 @@ const FundAnalyzer = () => {
     return { top10AUM, top10Growth, top10AbsoluteGrowth, top10RankChange };
   }, [rankedAdvisers]);
 
+  const fundLeaderboards = useMemo(() => {
+    // Filter funds: exclude > $5B and < $100k starting point (2022)
+    const validGrowthFunds = funds.filter(f => {
+      const gav2022 = f.GAV_2022;
+      const gav2024 = f.Latest_Gross_Asset_Value;
+      return f.growth_2y !== null &&
+        f.growth_2y !== undefined &&
+        !isNaN(f.growth_2y) &&
+        gav2022 && gav2022 >= 100000 && gav2022 <= 5000000000 &&  // $100k to $5B
+        gav2024;
+    });
+
+    const top10FundGrowth = [...validGrowthFunds]
+      .sort((a, b) => (b.growth_2y || 0) - (a.growth_2y || 0))
+      .slice(0, 10);
+
+    return { top10FundGrowth };
+  }, [funds]);
+
   const fundsForAdviser = useMemo(() => {
     if (!selectedAdviser) return [];
     return funds.filter(f => f.Adviser_Entity_CRD === selectedAdviser.CRD);
@@ -651,16 +670,21 @@ const FundAnalyzer = () => {
                   <div className="w-6 h-6 bg-green-100 rounded-lg flex items-center justify-center">
                     <TrendingUpIcon />
                   </div>
-                  <h3 className="text-sm font-semibold text-gray-900">Highest % Growth (2y)</h3>
+                  <h3 className="text-sm font-semibold text-gray-900">Highest AUM % Growth (2y)</h3>
                 </div>
                 <div className="space-y-1.5">
                   {adviserLeaderboards.top10Growth.slice(0, 5).map((adv, idx) => (
-                    <div key={adv.CRD} className="flex items-start justify-between gap-2">
-                      <div className="flex items-start gap-1.5 flex-1">
-                        <span className="text-xs font-semibold text-gray-900">{idx + 1}</span>
-                        <span className="text-xs font-medium text-gray-900 break-words">{adv.Adviser_Name}</span>
+                    <div key={adv.CRD} className="flex flex-col gap-0.5">
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex items-start gap-1.5 flex-1">
+                          <span className="text-xs font-semibold text-gray-900">{idx + 1}</span>
+                          <span className="text-xs font-medium text-gray-900 break-words">{adv.Adviser_Name}</span>
+                        </div>
+                        <span className="text-xs font-semibold text-green-600 whitespace-nowrap">+{adv.growth_rate_2y?.toFixed(1)}%</span>
                       </div>
-                      <span className="text-xs font-semibold text-green-600 whitespace-nowrap">+{adv.growth_rate_2y?.toFixed(1)}%</span>
+                      <div className="text-xs text-gray-500 ml-5">
+                        {formatCurrency(adv.calculated_aum_2022)} → {formatCurrency(adv.calculated_aum_2024)}
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -671,16 +695,21 @@ const FundAnalyzer = () => {
                   <div className="w-6 h-6 bg-purple-100 rounded-lg flex items-center justify-center">
                     <TrendingUpIcon />
                   </div>
-                  <h3 className="text-sm font-semibold text-gray-900">Largest $ Growth (2y)</h3>
+                  <h3 className="text-sm font-semibold text-gray-900">Largest AUM $ Growth (2y)</h3>
                 </div>
                 <div className="space-y-1.5">
                   {adviserLeaderboards.top10AbsoluteGrowth.slice(0, 5).map((adv, idx) => (
-                    <div key={adv.CRD} className="flex items-start justify-between gap-2">
-                      <div className="flex items-start gap-1.5 flex-1">
-                        <span className="text-xs font-semibold text-gray-900">{idx + 1}</span>
-                        <span className="text-xs font-medium text-gray-900 break-words">{adv.Adviser_Name}</span>
+                    <div key={adv.CRD} className="flex flex-col gap-0.5">
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex items-start gap-1.5 flex-1">
+                          <span className="text-xs font-semibold text-gray-900">{idx + 1}</span>
+                          <span className="text-xs font-medium text-gray-900 break-words">{adv.Adviser_Name}</span>
+                        </div>
+                        <span className="text-xs font-semibold text-purple-600 whitespace-nowrap">+{formatCurrency(adv.absolute_growth_2y, false)}</span>
                       </div>
-                      <span className="text-xs font-semibold text-purple-600 whitespace-nowrap">+{formatCurrency(adv.absolute_growth_2y, false)}</span>
+                      <div className="text-xs text-gray-500 ml-5">
+                        {formatCurrency(adv.calculated_aum_2022)} → {formatCurrency(adv.calculated_aum_2024)}
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -691,16 +720,22 @@ const FundAnalyzer = () => {
                   <div className="w-6 h-6 bg-orange-100 rounded-lg flex items-center justify-center">
                     <TrendingUpIcon />
                   </div>
-                  <h3 className="text-sm font-semibold text-gray-900">Highest AUM % Growth (2y)</h3>
+                  <h3 className="text-sm font-semibold text-gray-900">Top Fund GAV % Growth (2y)</h3>
+                  <span className="text-xs text-gray-500">$100k-$5B</span>
                 </div>
                 <div className="space-y-1.5">
-                  {adviserLeaderboards.top10Growth.slice(0, 5).map((adv, idx) => (
-                    <div key={adv.CRD} className="flex items-start justify-between gap-2">
-                      <div className="flex items-start gap-1.5 flex-1">
-                        <span className="text-xs font-semibold text-gray-900">{idx + 1}</span>
-                        <span className="text-xs font-medium text-gray-900 break-words">{adv.Adviser_Name}</span>
+                  {fundLeaderboards.top10FundGrowth.slice(0, 5).map((fund, idx) => (
+                    <div key={`${fund.Fund_ID}-${idx}`} className="flex flex-col gap-0.5">
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex items-start gap-1.5 flex-1">
+                          <span className="text-xs font-semibold text-gray-900">{idx + 1}</span>
+                          <span className="text-xs font-medium text-gray-900 break-words">{fund.Fund_Name}</span>
+                        </div>
+                        <span className="text-xs font-semibold text-orange-600 whitespace-nowrap">+{fund.growth_2y?.toFixed(1)}%</span>
                       </div>
-                      <span className="text-xs font-semibold text-orange-600 whitespace-nowrap">+{adv.growth_rate_2y?.toFixed(1)}%</span>
+                      <div className="text-xs text-gray-500 ml-5">
+                        {formatCurrency(fund.GAV_2022)} → {formatCurrency(fund.Latest_Gross_Asset_Value)}
+                      </div>
                     </div>
                   ))}
                 </div>
