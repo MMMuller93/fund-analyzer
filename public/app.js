@@ -151,11 +151,13 @@ const FundAnalyzer = () => {
             }
           });
 
-          // If no Total_AUM from adviser table, use sum of fund GAVs
+          // If no Total_AUM from adviser table, use sum of fund GAVs (latest value)
           if (!totalAUM && fundTotalsByCRD[adv.CRD]) {
             totalAUM = fundTotalsByCRD[adv.CRD];
           }
 
+          // For calculated values, use yearly data (which already includes fund fallback from lines 144-152)
+          // Then use Total_AUM as last resort for 2024
           const aum2022 = aumByYear.AUM_2022;
           const aum2024 = aumByYear.AUM_2024 || totalAUM;
 
@@ -411,21 +413,21 @@ const FundAnalyzer = () => {
 
   const getChartData = (item, isFund = false) => {
     const years = ['2011', '2012', '2013', '2014', '2015', '2016', '2017', '2018', '2019', '2020', '2021', '2022', '2023', '2024'];
-    
+
     const allData = years
       .map(year => ({
         year,
-        value: isFund ? item[`GAV_${year}`] : (item[`AUM_${year}`] || item.Total_AUM)
+        value: isFund ? item[`GAV_${year}`] : item[`AUM_${year}`]
       }))
       .filter(d => d.value !== null && d.value !== undefined && d.value > 0);
 
     if (timeFilter === 'All') return allData;
-    
+
     const currentYear = 2024;
     const filterMap = { '6M': 0.5, '1Y': 1, '2Y': 2, '5Y': 5 };
     const yearsBack = filterMap[timeFilter];
     if (!yearsBack) return allData;
-    
+
     const cutoffYear = currentYear - yearsBack;
     return allData.filter(d => parseInt(d.year) >= cutoffYear);
   };
