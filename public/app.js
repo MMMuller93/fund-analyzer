@@ -164,9 +164,9 @@ const FundAnalyzer = () => {
           return {
             ...adv,
             ...aumByYear,
-            Total_AUM: totalAUM || 0,
-            calculated_aum_2024: aum2024 || 0,
-            calculated_aum_2022: aum2022 || 0,
+            Total_AUM: totalAUM,  // Keep calculated value, don't default to 0
+            calculated_aum_2024: aum2024,
+            calculated_aum_2022: aum2022,
             growth_rate_2y: aum2022 && aum2024 && aum2022 > 0
               ? ((aum2024 - aum2022) / aum2022) * 100
               : null
@@ -607,13 +607,25 @@ const FundAnalyzer = () => {
 
                 <div className="bg-gray-50 rounded-lg p-6">
                   <h4 className="text-sm font-semibold text-gray-700 mb-4">Historical Data</h4>
-                  <div className="space-y-2">
-                    {getChartData(selectedItem, activeTab === 'funds').map((item, idx) => (
-                      <div key={idx} className="flex justify-between items-center py-2 border-b border-gray-200 last:border-b-0">
-                        <span className="text-sm font-medium text-gray-600">{item.year}</span>
-                        <span className="text-sm font-bold text-emerald-600">{formatCurrency(item.value)}</span>
-                      </div>
-                    ))}
+                  <div className="space-y-3">
+                    {(() => {
+                      const chartData = getChartData(selectedItem, activeTab === 'funds');
+                      const maxValue = Math.max(...chartData.map(d => d.value));
+                      return chartData.map((item, idx) => (
+                        <div key={idx}>
+                          <div className="flex justify-between items-center mb-1">
+                            <span className="text-sm font-medium text-gray-600">{item.year}</span>
+                            <span className="text-sm font-bold text-emerald-600">{formatCurrency(item.value)}</span>
+                          </div>
+                          <div className="w-full bg-gray-200 rounded-full h-2">
+                            <div
+                              className="bg-emerald-500 h-2 rounded-full transition-all"
+                              style={{ width: `${(item.value / maxValue) * 100}%` }}
+                            ></div>
+                          </div>
+                        </div>
+                      ));
+                    })()}
                   </div>
                 </div>
 
