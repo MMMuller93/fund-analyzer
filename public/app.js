@@ -60,18 +60,25 @@ const FundAnalyzer = () => {
   const loadInitialData = async () => {
     try {
       setLoading(true);
+      console.log('Starting data load from Supabase...');
 
       const [advisersRes, fundsRes] = await Promise.all([
         fetch(`${SUPABASE_URL}/rest/v1/Advisers?select=*`, { headers: supabaseHeaders }),
         fetch(`${SUPABASE_URL}/rest/v1/Funds?select=*`, { headers: supabaseHeaders })
       ]);
 
+      console.log('Fetch complete. Advisers status:', advisersRes.status, 'Funds status:', fundsRes.status);
+
       if (!advisersRes.ok || !fundsRes.ok) {
-        throw new Error('Failed to fetch data from Supabase');
+        const advError = !advisersRes.ok ? await advisersRes.text() : '';
+        const fundError = !fundsRes.ok ? await fundsRes.text() : '';
+        throw new Error(`Failed to fetch data. Advisers: ${advError}, Funds: ${fundError}`);
       }
 
       const advisersData = await advisersRes.json();
       const fundsData = await fundsRes.json();
+
+      console.log('Data loaded. Advisers:', advisersData.length, 'Funds:', fundsData.length);
 
       // Calculate fund totals by CRD
       const fundTotalsByCRD = {};
@@ -174,12 +181,17 @@ const FundAnalyzer = () => {
           };
         });
 
+      console.log('Enriched advisers:', enrichedAdvisers.length, 'Enriched funds:', enrichedFunds.length);
+
       setAdvisers(enrichedAdvisers);
       setFunds(enrichedFunds);
       setLoading(false);
+
+      console.log('Data load complete!');
     } catch (error) {
       console.error('Error loading data:', error);
-      alert('Failed to load data. Please check console for details.');
+      console.error('Error stack:', error.stack);
+      alert(`Failed to load data: ${error.message}. Check console for details.`);
       setLoading(false);
     }
   };
