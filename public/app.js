@@ -1,5 +1,5 @@
 const { useState, useEffect, useMemo } = React;
-const { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } = Recharts;
+// Charts removed for production deployment - using table view only
 
 // Icons
 const SearchIcon = () => (
@@ -501,30 +501,16 @@ const FundAnalyzer = () => {
                   </div>
                 )}
 
-                <div className="h-96 bg-gray-50 rounded-lg p-4">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <AreaChart data={getChartData(selectedItem, activeTab === 'funds')}>
-                      <defs>
-                        <linearGradient id="gradient" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="5%" stopColor="#10b981" stopOpacity={0.3}/>
-                          <stop offset="95%" stopColor="#10b981" stopOpacity={0}/>
-                        </linearGradient>
-                      </defs>
-                      <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-                      <XAxis dataKey="year" stroke="#6b7280" style={{ fontSize: '12px' }} />
-                      <YAxis stroke="#6b7280" tickFormatter={formatCurrency} style={{ fontSize: '12px' }} />
-                      <Tooltip
-                        formatter={(value) => [formatCurrency(value), activeTab === 'advisers' ? 'AUM' : 'GAV']}
-                        contentStyle={{ 
-                          backgroundColor: 'white', 
-                          border: '1px solid #e5e7eb', 
-                          borderRadius: '8px',
-                          boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
-                        }}
-                      />
-                      <Area type="stepAfter" dataKey="value" stroke="#10b981" strokeWidth={2} fill="url(#gradient)" />
-                    </AreaChart>
-                  </ResponsiveContainer>
+                <div className="bg-gray-50 rounded-lg p-6">
+                  <h4 className="text-sm font-semibold text-gray-700 mb-4">Historical Data</h4>
+                  <div className="space-y-2">
+                    {getChartData(selectedItem, activeTab === 'funds').map((item, idx) => (
+                      <div key={idx} className="flex justify-between items-center py-2 border-b border-gray-200 last:border-b-0">
+                        <span className="text-sm font-medium text-gray-600">{item.year}</span>
+                        <span className="text-sm font-bold text-emerald-600">{formatCurrency(item.value)}</span>
+                      </div>
+                    ))}
+                  </div>
                 </div>
 
                 {activeTab === 'advisers' && selectedAdviser && fundsForAdviser.length > 0 && (
