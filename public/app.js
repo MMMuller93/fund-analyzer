@@ -277,9 +277,13 @@ const FundAnalyzer = () => {
   }, [searchTerm, activeTab]);
 
   const rankedAdvisers = useMemo(() => {
-    const advisersWithGrowth = advisers.filter(a => a.calculated_aum_2022 && a.calculated_aum_2024 && a.calculated_aum_2022 > 0);
-    const sortedBy2024 = [...advisersWithGrowth].sort((a, b) => b.calculated_aum_2024 - a.calculated_aum_2024);
-    const sortedBy2022 = [...advisersWithGrowth].sort((a, b) => b.calculated_aum_2022 - a.calculated_aum_2022);
+    // Include all advisers with AUM data (current or historical)
+    const advisersWithAUM = advisers.filter(a => a.Total_AUM || a.calculated_aum_2024);
+    const sortedBy2024 = [...advisersWithAUM].sort((a, b) => (b.calculated_aum_2024 || b.Total_AUM || 0) - (a.calculated_aum_2024 || a.Total_AUM || 0));
+
+    // Only rank 2022 for those with 2022 data
+    const advisersWithGrowthData = advisersWithAUM.filter(a => a.calculated_aum_2022 && a.calculated_aum_2022 > 0);
+    const sortedBy2022 = [...advisersWithGrowthData].sort((a, b) => b.calculated_aum_2022 - a.calculated_aum_2022);
 
     const rank2022Map = new Map();
     sortedBy2022.forEach((adv, idx) => {
@@ -290,7 +294,7 @@ const FundAnalyzer = () => {
       ...adv,
       rank_2024: idx + 1,
       rank_2022: rank2022Map.get(adv.CRD),
-      rank_change_2y: rank2022Map.get(adv.CRD) - (idx + 1)
+      rank_change_2y: rank2022Map.has(adv.CRD) ? rank2022Map.get(adv.CRD) - (idx + 1) : null
     }));
   }, [advisers]);
 
@@ -636,6 +640,15 @@ const FundAnalyzer = () => {
 
             {selectedItem && (
               <div className="bg-white rounded-xl border shadow-sm p-8">
+                <button
+                  onClick={() => setSelectedItem(null)}
+                  className="mb-6 flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors"
+                >
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M19 12H5M12 19l-7-7 7-7"/>
+                  </svg>
+                  <span className="font-medium">Back to {activeTab === 'advisers' ? 'Advisers' : 'Funds'}</span>
+                </button>
                 <div className="mb-8">
                   <h2 className="text-3xl font-bold text-gray-900 mb-6">
                     {activeTab === 'advisers' ? selectedItem.Adviser_Name : selectedItem.Fund_Name}
