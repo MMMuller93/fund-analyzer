@@ -472,7 +472,7 @@ const FundAnalyzer = () => {
                   <h3 className="text-sm font-semibold text-gray-900">Largest AUM</h3>
                 </div>
                 <div className="space-y-1.5">
-                  {adviserLeaderboards.top10AUM.slice(0, 3).map((adv) => (
+                  {adviserLeaderboards.top10AUM.slice(0, 5).map((adv) => (
                     <div key={adv.CRD} className="flex items-start justify-between gap-2">
                       <div className="flex items-start gap-1.5 flex-1">
                         <span className="text-xs font-semibold text-gray-900">{adv.rank_2024}</span>
@@ -492,7 +492,7 @@ const FundAnalyzer = () => {
                   <h3 className="text-sm font-semibold text-gray-900">Highest % Growth (2y)</h3>
                 </div>
                 <div className="space-y-1.5">
-                  {adviserLeaderboards.top10Growth.slice(0, 3).map((adv, idx) => (
+                  {adviserLeaderboards.top10Growth.slice(0, 5).map((adv, idx) => (
                     <div key={adv.CRD} className="flex items-start justify-between gap-2">
                       <div className="flex items-start gap-1.5 flex-1">
                         <span className="text-xs font-semibold text-gray-900">{idx + 1}</span>
@@ -512,7 +512,7 @@ const FundAnalyzer = () => {
                   <h3 className="text-sm font-semibold text-gray-900">Largest $ Growth (2y)</h3>
                 </div>
                 <div className="space-y-1.5">
-                  {adviserLeaderboards.top10AbsoluteGrowth.slice(0, 3).map((adv, idx) => (
+                  {adviserLeaderboards.top10AbsoluteGrowth.slice(0, 5).map((adv, idx) => (
                     <div key={adv.CRD} className="flex items-start justify-between gap-2">
                       <div className="flex items-start gap-1.5 flex-1">
                         <span className="text-xs font-semibold text-gray-900">{idx + 1}</span>
@@ -532,7 +532,7 @@ const FundAnalyzer = () => {
                   <h3 className="text-sm font-semibold text-gray-900">Highest AUM % Growth (2y)</h3>
                 </div>
                 <div className="space-y-1.5">
-                  {adviserLeaderboards.top10Growth.slice(0, 3).map((adv, idx) => (
+                  {adviserLeaderboards.top10Growth.slice(0, 5).map((adv, idx) => (
                     <div key={adv.CRD} className="flex items-start justify-between gap-2">
                       <div className="flex items-start gap-1.5 flex-1">
                         <span className="text-xs font-semibold text-gray-900">{idx + 1}</span>
