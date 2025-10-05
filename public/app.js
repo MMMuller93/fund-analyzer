@@ -75,20 +75,6 @@ const FundAnalyzer = () => {
       const advisersData = await advisersRes.json();
       console.log('Advisers loaded:', advisersData.length);
 
-      // Debug: Check first adviser's data structure
-      if (advisersData.length > 0) {
-        const firstAdviser = advisersData[0];
-        console.log('First adviser sample:', {
-          name: firstAdviser.Adviser_Name,
-          CRD: firstAdviser.CRD,
-          Total_AUM: firstAdviser.Total_AUM,
-          AUM_2024: firstAdviser.AUM_2024,
-          AUM_2023: firstAdviser.AUM_2023,
-          AUM_2022: firstAdviser.AUM_2022,
-          hasYearlyData: !!(firstAdviser.AUM_2024 || firstAdviser.AUM_2023 || firstAdviser.AUM_2022)
-        });
-      }
-
       // Load funds in batches (paginated)
       const BATCH_SIZE = 5000;
       let fundsData = [];
@@ -178,19 +164,6 @@ const FundAnalyzer = () => {
 
           const aum2022 = aumByYear.AUM_2022;
 
-          // Debug: Log first 3 advisers' enriched data
-          const advIndex = advisersData.filter(a => a.Adviser_Name).indexOf(adv);
-          if (advIndex < 3) {
-            console.log(`\nEnriched adviser #${advIndex + 1}: ${adv.Adviser_Name} (CRD: ${adv.CRD})`);
-            console.log('  Original Total_AUM from sheet:', adv.Total_AUM);
-            console.log('  Parsed totalAUM:', totalAUM);
-            console.log('  calculated_aum_2024:', aum2024);
-            console.log('  calculated_aum_2022:', aum2022);
-            console.log('  AUM_2024 from aumByYear:', aumByYear.AUM_2024);
-            console.log('  Fund GAV total for this adviser:', fundTotalsByCRD[adv.CRD]);
-            console.log('  Fund yearly 2024:', fundYearlyTotalsByCRD[adv.CRD]?.[2024]);
-          }
-
           return {
             ...adv,
             ...aumByYear,
@@ -207,18 +180,26 @@ const FundAnalyzer = () => {
         .filter(f => f.Fund_Name && f.Latest_Gross_Asset_Value)
         .map(fund => {
           const latestGAV = parseCurrency(fund.Latest_Gross_Asset_Value);
-          const gav2019 = parseCurrency(fund.GAV_2019);
-          const gav2022 = parseCurrency(fund.GAV_2022);
-          const gav2023 = parseCurrency(fund.GAV_2023);
-          const gav2024 = parseCurrency(fund.GAV_2024);
+
+          // Parse all yearly GAV values
+          const gavByYear = {};
+          const years = ['2011', '2012', '2013', '2014', '2015', '2016', '2017', '2018', '2019', '2020', '2021', '2022', '2023', '2024'];
+          years.forEach(year => {
+            const gav = parseCurrency(fund[`GAV_${year}`]);
+            if (gav) {
+              gavByYear[`GAV_${year}`] = gav;
+            }
+          });
+
+          const gav2019 = gavByYear.GAV_2019;
+          const gav2022 = gavByYear.GAV_2022;
+          const gav2023 = gavByYear.GAV_2023;
+          const gav2024 = gavByYear.GAV_2024;
 
           return {
             ...fund,
+            ...gavByYear,
             Latest_Gross_Asset_Value: latestGAV,
-            GAV_2019: gav2019,
-            GAV_2022: gav2022,
-            GAV_2023: gav2023,
-            GAV_2024: gav2024,
             growth_1y: gav2023 && gav2024 && gav2023 > 0
               ? ((gav2024 - gav2023) / gav2023) * 100
               : null,
@@ -262,15 +243,23 @@ const FundAnalyzer = () => {
             `${SUPABASE_URL}/rest/v1/Advisers?or=(Adviser_Name.ilike.%25${encodeURIComponent(term)}%25,Adviser_Entity_Legal_Name.ilike.%25${encodeURIComponent(term)}%25)&limit=20`,
             { headers: supabaseHeaders }
           );
-          
+
           if (res.ok) {
             const data = await res.json();
-            const enriched = data.map(adv => ({
-              ...adv,
-              growth_rate_2y: adv.AUM_2022 && adv.AUM_2024 && adv.AUM_2022 > 0
-                ? ((adv.AUM_2024 - adv.AUM_2022) / adv.AUM_2022) * 100
-                : null
-            }));
+            const enriched = data.map(adv => {
+              const totalAUM = parseCurrency(adv.Total_AUM);
+              const aum2024 = parseCurrency(adv.AUM_2024) || totalAUM;
+              const aum2022 = parseCurrency(adv.AUM_2022);
+
+              return {
+                ...adv,
+                Total_AUM: totalAUM,
+                calculated_aum_2024: aum2024,
+                growth_rate_2y: aum2022 && aum2024 && aum2022 > 0
+                  ? ((aum2024 - aum2022) / aum2022) * 100
+                  : null
+              };
+            });
             setSearchResults(enriched);
           }
         } else {
@@ -278,18 +267,29 @@ const FundAnalyzer = () => {
             `${SUPABASE_URL}/rest/v1/Funds?or=(Fund_Name.ilike.%25${encodeURIComponent(term)}%25,Adviser_Entity_Legal_Name.ilike.%25${encodeURIComponent(term)}%25)&limit=20`,
             { headers: supabaseHeaders }
           );
-          
+
           if (res.ok) {
             const data = await res.json();
-            const enriched = data.map(fund => ({
-              ...fund,
-              growth_1y: fund.GAV_2023 && fund.GAV_2024 && fund.GAV_2023 > 0
-                ? ((fund.GAV_2024 - fund.GAV_2023) / fund.GAV_2023) * 100
-                : null,
-              growth_2y: fund.GAV_2022 && fund.GAV_2024 && fund.GAV_2022 > 0
-                ? ((fund.GAV_2024 - fund.GAV_2022) / fund.GAV_2022) * 100
-                : null
-            }));
+            const enriched = data.map(fund => {
+              const latestGAV = parseCurrency(fund.Latest_Gross_Asset_Value);
+              const gav2023 = parseCurrency(fund.GAV_2023);
+              const gav2024 = parseCurrency(fund.GAV_2024);
+              const gav2022 = parseCurrency(fund.GAV_2022);
+
+              return {
+                ...fund,
+                Latest_Gross_Asset_Value: latestGAV,
+                GAV_2023: gav2023,
+                GAV_2024: gav2024,
+                GAV_2022: gav2022,
+                growth_1y: gav2023 && gav2024 && gav2023 > 0
+                  ? ((gav2024 - gav2023) / gav2023) * 100
+                  : null,
+                growth_2y: gav2022 && gav2024 && gav2022 > 0
+                  ? ((gav2024 - gav2022) / gav2022) * 100
+                  : null
+              };
+            });
             setSearchResults(enriched);
           }
         }
@@ -755,21 +755,19 @@ const FundAnalyzer = () => {
                   )}
                 </div>
 
-                {activeTab === 'advisers' && (
-                  <div className="flex justify-end gap-2 mb-4">
-                    {['6M', '1Y', '2Y', '5Y', 'All'].map(period => (
-                      <button
-                        key={period}
-                        onClick={() => setTimeFilter(period)}
-                        className={`px-4 py-2 rounded-lg font-medium transition-all ${
-                          timeFilter === period ? 'bg-gray-900 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                        }`}
-                      >
-                        {period}
-                      </button>
-                    ))}
-                  </div>
-                )}
+                <div className="flex justify-end gap-2 mb-4">
+                  {['6M', '1Y', '2Y', '5Y', 'All'].map(period => (
+                    <button
+                      key={period}
+                      onClick={() => setTimeFilter(period)}
+                      className={`px-4 py-2 rounded-lg font-medium transition-all ${
+                        timeFilter === period ? 'bg-gray-900 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                      }`}
+                    >
+                      {period}
+                    </button>
+                  ))}
+                </div>
 
                 <div className="bg-gray-50 rounded-lg p-6">
                   <h4 className="text-sm font-semibold text-gray-700 mb-4">Historical Data</h4>
