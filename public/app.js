@@ -262,7 +262,10 @@ const FundAnalyzer = () => {
 
   const adviserLeaderboards = useMemo(() => {
     const top10AUM = rankedAdvisers.slice(0, 10);
-    const top10Growth = [...rankedAdvisers].sort((a, b) => b.growth_rate_2y - a.growth_rate_2y).slice(0, 10);
+    const top10Growth = [...rankedAdvisers]
+      .filter(a => a.growth_rate_2y !== null && a.growth_rate_2y !== undefined && !isNaN(a.growth_rate_2y))
+      .sort((a, b) => (b.growth_rate_2y || 0) - (a.growth_rate_2y || 0))
+      .slice(0, 10);
     const top10RankChange = [...rankedAdvisers].sort((a, b) => b.rank_change_2y - a.rank_change_2y).slice(0, 10);
     return { top10AUM, top10Growth, top10RankChange };
   }, [rankedAdvisers]);
@@ -272,13 +275,18 @@ const FundAnalyzer = () => {
     return funds.filter(f => f.Adviser_Entity_CRD === selectedAdviser.CRD);
   }, [funds, selectedAdviser]);
 
-  const formatCurrency = (value) => {
+  const formatCurrency = (value, useShortForm = true) => {
     if (value === null || value === undefined || isNaN(value)) return 'N/A';
     if (value === 0) return '$0';
-    if (value >= 1e9) return `$${(value / 1e9).toFixed(2)}B`;
-    if (value >= 1e6) return `$${(value / 1e6).toFixed(2)}M`;
-    if (value >= 1e3) return `$${(value / 1e3).toFixed(2)}K`;
-    return `$${value.toFixed(2)}`;
+
+    if (useShortForm) {
+      if (value >= 1e9) return `$${(value / 1e9).toFixed(2)}B`;
+      if (value >= 1e6) return `$${(value / 1e6).toFixed(2)}M`;
+      if (value >= 1e3) return `$${(value / 1e3).toFixed(2)}K`;
+    }
+
+    // Full format with commas
+    return `$${value.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
   };
 
   const getChartData = (item, isFund = false) => {
@@ -362,12 +370,17 @@ const FundAnalyzer = () => {
               </div>
               <div className="space-y-2">
                 {adviserLeaderboards.top10Growth.slice(0, 5).map((adv, idx) => (
-                  <div key={adv.CRD} className="flex items-center justify-between gap-2">
-                    <div className="flex items-center gap-2 min-w-0 flex-1">
-                      <span className="text-sm font-semibold text-gray-900">{idx + 1}</span>
-                      <span className="text-sm font-medium text-gray-900 truncate">{adv.Adviser_Name}</span>
+                  <div key={adv.CRD} className="flex flex-col gap-1">
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-2 min-w-0 flex-1">
+                        <span className="text-sm font-semibold text-gray-900">{idx + 1}</span>
+                        <span className="text-sm font-medium text-gray-900 truncate">{adv.Adviser_Name}</span>
+                      </div>
+                      <span className="text-sm font-semibold text-green-600 whitespace-nowrap">+{adv.growth_rate_2y?.toFixed(1)}%</span>
                     </div>
-                    <span className="text-sm font-semibold text-green-600 whitespace-nowrap">+{adv.growth_rate_2y.toFixed(1)}%</span>
+                    <div className="text-xs text-gray-500 ml-6">
+                      {formatCurrency(adv.calculated_aum_2022)} → {formatCurrency(adv.calculated_aum_2024)}
+                    </div>
                   </div>
                 ))}
               </div>
