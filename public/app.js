@@ -764,31 +764,92 @@ const FundAnalyzer = () => {
                 </div>
 
                 <div className="bg-gray-50 rounded-lg p-6">
-                  <h4 className="text-sm font-semibold text-gray-700 mb-4">Historical Data</h4>
-                  <div className="space-y-3">
-                    {(() => {
-                      const chartData = getChartData(selectedItem, activeTab === 'funds');
-                      console.log('Rendering chart for:', activeTab === 'funds' ? selectedItem.Fund_Name : selectedItem.Adviser_Name, 'Data points:', chartData.length);
-                      if (chartData.length === 0) {
-                        return <div className="text-sm text-gray-500">No historical data available for this {activeTab === 'funds' ? 'fund' : 'adviser'}</div>;
-                      }
-                      const maxValue = Math.max(...chartData.map(d => d.value));
-                      return chartData.map((item, idx) => (
-                        <div key={idx}>
-                          <div className="flex justify-between items-center mb-1">
-                            <span className="text-sm font-medium text-gray-600">{item.year}</span>
-                            <span className="text-sm font-bold text-emerald-600">{formatCurrency(item.value)}</span>
+                  <h4 className="text-sm font-semibold text-gray-700 mb-4">Historical {activeTab === 'funds' ? 'GAV' : 'AUM'}</h4>
+                  {(() => {
+                    const chartData = getChartData(selectedItem, activeTab === 'funds');
+                    console.log('Rendering chart for:', activeTab === 'funds' ? selectedItem.Fund_Name : selectedItem.Adviser_Name, 'Data points:', chartData.length);
+                    if (chartData.length === 0) {
+                      return <div className="text-sm text-gray-500">No historical data available for this {activeTab === 'funds' ? 'fund' : 'adviser'}</div>;
+                    }
+
+                    const maxValue = Math.max(...chartData.map(d => d.value));
+                    const minValue = Math.min(...chartData.map(d => d.value));
+                    const valueRange = maxValue - minValue;
+                    const chartHeight = 200;
+                    const chartWidth = 100; // percentage
+
+                    // Calculate points for the line
+                    const points = chartData.map((d, i) => {
+                      const x = (i / (chartData.length - 1)) * chartWidth;
+                      const y = chartHeight - ((d.value - minValue) / valueRange) * chartHeight;
+                      return `${x},${y}`;
+                    }).join(' ');
+
+                    // Create area path (same as line but closing to bottom)
+                    const areaPoints = chartData.map((d, i) => {
+                      const x = (i / (chartData.length - 1)) * chartWidth;
+                      const y = chartHeight - ((d.value - minValue) / valueRange) * chartHeight;
+                      return `${x},${y}`;
+                    });
+                    const areaPath = `0,${chartHeight} ${areaPoints.join(' ')} ${chartWidth},${chartHeight}`;
+
+                    return (
+                      <div>
+                        <div className="relative" style={{ height: `${chartHeight}px` }}>
+                          <svg width="100%" height={chartHeight} viewBox={`0 0 ${chartWidth} ${chartHeight}`} preserveAspectRatio="none" className="absolute inset-0">
+                            {/* Area fill */}
+                            <polygon
+                              points={areaPath}
+                              fill="rgba(16, 185, 129, 0.1)"
+                              stroke="none"
+                            />
+                            {/* Line */}
+                            <polyline
+                              points={points}
+                              fill="none"
+                              stroke="rgb(16, 185, 129)"
+                              strokeWidth="0.5"
+                              vectorEffect="non-scaling-stroke"
+                            />
+                            {/* Data points */}
+                            {chartData.map((d, i) => {
+                              const x = (i / (chartData.length - 1)) * chartWidth;
+                              const y = chartHeight - ((d.value - minValue) / valueRange) * chartHeight;
+                              return (
+                                <circle
+                                  key={i}
+                                  cx={x}
+                                  cy={y}
+                                  r="0.8"
+                                  fill="rgb(16, 185, 129)"
+                                  vectorEffect="non-scaling-stroke"
+                                />
+                              );
+                            })}
+                          </svg>
+                        </div>
+
+                        {/* X-axis labels */}
+                        <div className="flex justify-between mt-2 text-xs text-gray-600">
+                          <span>{chartData[0].year}</span>
+                          {chartData.length > 2 && <span>{chartData[Math.floor(chartData.length / 2)].year}</span>}
+                          <span>{chartData[chartData.length - 1].year}</span>
+                        </div>
+
+                        {/* Value labels */}
+                        <div className="mt-4 grid grid-cols-2 gap-4 text-sm">
+                          <div>
+                            <div className="text-gray-500">Current</div>
+                            <div className="font-bold text-emerald-600">{formatCurrency(chartData[chartData.length - 1].value)}</div>
                           </div>
-                          <div className="w-full bg-gray-200 rounded-full h-2">
-                            <div
-                              className="bg-emerald-500 h-2 rounded-full transition-all"
-                              style={{ width: `${(item.value / maxValue) * 100}%` }}
-                            ></div>
+                          <div>
+                            <div className="text-gray-500">Peak</div>
+                            <div className="font-bold text-gray-900">{formatCurrency(maxValue)}</div>
                           </div>
                         </div>
-                      ));
-                    })()}
-                  </div>
+                      </div>
+                    );
+                  })()}
                 </div>
 
                 {activeTab === 'advisers' && selectedAdviser && fundsForAdviser.length > 0 && (
