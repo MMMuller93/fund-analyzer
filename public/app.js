@@ -458,9 +458,10 @@ const FundAnalyzer = () => {
     <div className="min-h-screen bg-white">
       <div className="border-b sticky top-0 z-10 bg-white">
         <div className="max-w-7xl mx-auto px-8 py-4">
-          <div className="overflow-x-auto">
-            <div className="flex gap-4 pb-4" style={{minWidth: 'fit-content'}}>
-              {/* Leaderboards */}
+          {!selectedItem && activeTab !== 'rankings' && activeTab !== 'fund-rankings' && (
+            <div className="overflow-x-auto">
+              <div className="flex gap-4 pb-4" style={{minWidth: 'fit-content'}}>
+                {/* Leaderboards */}
               <div className="bg-white border rounded-lg p-3 shadow-sm hover:shadow-md transition-shadow" style={{minWidth: '280px'}}>
                 <div className="flex items-center gap-2 mb-2">
                   <div className="w-6 h-6 bg-blue-100 rounded-lg flex items-center justify-center">
@@ -542,6 +543,7 @@ const FundAnalyzer = () => {
               </div>
             </div>
           </div>
+          )}
 
           <div className="flex gap-1 border-b">
             <button
@@ -714,7 +716,7 @@ const FundAnalyzer = () => {
                             <line x1="12" y1="18" x2="12" y2="12"/>
                             <line x1="9" y1="15" x2="15" y2="15"/>
                           </svg>
-                          <span className="text-sm font-medium">Form ADV</span>
+                          <span className="text-sm font-medium">Latest Form ADV</span>
                         </a>
                       )}
                     </div>
