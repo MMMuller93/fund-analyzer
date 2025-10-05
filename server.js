@@ -13,6 +13,11 @@ app.get('/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
+// Serve index.html for root route
+app.get('/', (req, res) => {
+  res.sendFile('index.html', { root: './public' });
+});
+
 app.listen(port, () => {
   console.log(`Server running on port ${port}`);
 });
