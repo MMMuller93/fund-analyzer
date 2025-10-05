@@ -139,25 +139,21 @@ const FundAnalyzer = () => {
           let totalAUM = parseCurrency(adv.Total_AUM);
           let aumByYear = {};
 
-          // Parse yearly AUM values from adviser data
+          // Parse yearly AUM values from adviser data, or use fund totals as fallback
           const years = ['2011', '2012', '2013', '2014', '2015', '2016', '2017', '2018', '2019', '2020', '2021', '2022', '2023', '2024'];
           years.forEach(year => {
             const adviserYearAUM = parseCurrency(adv[`AUM_${year}`]);
             if (adviserYearAUM) {
               aumByYear[`AUM_${year}`] = adviserYearAUM;
+            } else if (fundYearlyTotalsByCRD[adv.CRD]?.[year]) {
+              // Use fund totals if adviser doesn't have this year's data
+              aumByYear[`AUM_${year}`] = fundYearlyTotalsByCRD[adv.CRD][year];
             }
           });
 
           // If no Total_AUM from adviser table, use sum of fund GAVs
           if (!totalAUM && fundTotalsByCRD[adv.CRD]) {
             totalAUM = fundTotalsByCRD[adv.CRD];
-
-            // If no yearly AUM from adviser, use fund totals
-            years.forEach(year => {
-              if (!aumByYear[`AUM_${year}`] && fundYearlyTotalsByCRD[adv.CRD]?.[year]) {
-                aumByYear[`AUM_${year}`] = fundYearlyTotalsByCRD[adv.CRD][year];
-              }
-            });
           }
 
           const aum2022 = aumByYear.AUM_2022;
@@ -680,6 +676,40 @@ const FundAnalyzer = () => {
                       <div className="text-2xl font-bold text-gray-900">{activeTab === 'advisers' ? selectedItem.CRD : selectedItem.Fund_ID}</div>
                     </div>
                   </div>
+
+                  {activeTab === 'advisers' && (selectedItem.Primary_Website || selectedItem.Form_ADV_URL) && (
+                    <div className="flex gap-4 mt-4">
+                      {selectedItem.Primary_Website && (
+                        <a
+                          href={selectedItem.Primary_Website.startsWith('http') ? selectedItem.Primary_Website : `https://${selectedItem.Primary_Website}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center gap-2 px-4 py-2 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition-colors"
+                        >
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6M15 3h6v6M10 14L21 3"/>
+                          </svg>
+                          <span className="text-sm font-medium">Website</span>
+                        </a>
+                      )}
+                      {selectedItem.Form_ADV_URL && (
+                        <a
+                          href={selectedItem.Form_ADV_URL}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center gap-2 px-4 py-2 bg-gray-50 text-gray-600 rounded-lg hover:bg-gray-100 transition-colors"
+                        >
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                            <polyline points="14 2 14 8 20 8"/>
+                            <line x1="12" y1="18" x2="12" y2="12"/>
+                            <line x1="9" y1="15" x2="15" y2="15"/>
+                          </svg>
+                          <span className="text-sm font-medium">Form ADV</span>
+                        </a>
+                      )}
+                    </div>
+                  )}
                 </div>
 
                 {activeTab === 'advisers' && (
