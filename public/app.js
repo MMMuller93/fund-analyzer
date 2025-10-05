@@ -313,6 +313,28 @@ const FundAnalyzer = () => {
     setSortConfig({ key, direction });
   };
 
+  const sortedItems = useMemo(() => {
+    if (!showAllSearchResults || !sortConfig.key) return searchResults;
+
+    const dataToSort = [...searchResults];
+
+    dataToSort.sort((a, b) => {
+      let aVal = a[sortConfig.key];
+      let bVal = b[sortConfig.key];
+
+      if (aVal === null || aVal === undefined) return 1;
+      if (bVal === null || bVal === undefined) return -1;
+
+      if (sortConfig.direction === 'asc') {
+        return aVal > bVal ? 1 : -1;
+      } else {
+        return aVal < bVal ? 1 : -1;
+      }
+    });
+
+    return dataToSort;
+  }, [searchResults, sortConfig, showAllSearchResults]);
+
   const sortedRankings = useMemo(() => {
     const isAdvisers = activeTab === 'rankings';
     if (!sortConfig.key) return isAdvisers ? rankedAdvisers : rankedFunds;
@@ -621,7 +643,7 @@ const FundAnalyzer = () => {
                 />
               </div>
 
-              {searchTerm.trim().length > 0 && (
+              {searchTerm.trim().length > 0 && !showAllSearchResults && (
                 <div className="mt-4 max-h-80 overflow-y-auto border rounded-lg bg-white">
                   {searching ? (
                     <div className="p-4 text-gray-500 text-center">Searching...</div>
@@ -635,6 +657,7 @@ const FundAnalyzer = () => {
                             setSelectedAdviser(item);
                           }
                           setSearchTerm('');
+                          setShowAllSearchResults(false);
                         }}
                         className="p-4 hover:bg-gray-50 cursor-pointer border-b last:border-0 transition-colors"
                       >
@@ -655,6 +678,161 @@ const FundAnalyzer = () => {
                   ) : (
                     <div className="p-4 text-gray-500 text-center">No results found</div>
                   )}
+                </div>
+              )}
+
+              {showAllSearchResults && searchResults.length > 0 && (
+                <div className="mt-4 bg-white rounded-xl border shadow-sm overflow-hidden">
+                  <div className="p-6 border-b flex justify-between items-center">
+                    <h3 className="text-xl font-bold text-gray-900">
+                      Search Results ({searchResults.length} {activeTab === 'advisers' ? 'Advisers' : 'Funds'})
+                    </h3>
+                    <button
+                      onClick={() => {
+                        setShowAllSearchResults(false);
+                        setSearchTerm('');
+                      }}
+                      className="text-gray-600 hover:text-gray-900 transition-colors"
+                    >
+                      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <path d="M18 6L6 18M6 6l12 12"/>
+                      </svg>
+                    </button>
+                  </div>
+                  <div className="overflow-x-auto">
+                    {activeTab === 'advisers' ? (
+                      <table className="w-full">
+                        <thead className="bg-gray-50 border-b">
+                          <tr>
+                            <th
+                              className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
+                              onClick={() => handleSort('Adviser_Name')}
+                            >
+                              Adviser Name {sortConfig.key === 'Adviser_Name' && (sortConfig.direction === 'asc' ? '↑' : '↓')}
+                            </th>
+                            <th
+                              className="px-6 py-4 text-right text-xs font-semibold text-gray-600 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
+                              onClick={() => handleSort('calculated_aum_2024')}
+                            >
+                              Current AUM {sortConfig.key === 'calculated_aum_2024' && (sortConfig.direction === 'asc' ? '↑' : '↓')}
+                            </th>
+                            <th
+                              className="px-6 py-4 text-right text-xs font-semibold text-gray-600 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
+                              onClick={() => handleSort('growth_rate_2y')}
+                            >
+                              2Y Growth {sortConfig.key === 'growth_rate_2y' && (sortConfig.direction === 'asc' ? '↑' : '↓')}
+                            </th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-gray-200">
+                          {sortedItems.map((adv) => (
+                            <tr
+                              key={adv.CRD}
+                              className="hover:bg-gray-50 transition-colors cursor-pointer"
+                              onClick={() => {
+                                setSelectedItem(adv);
+                                setSelectedAdviser(adv);
+                                setShowAllSearchResults(false);
+                                setSearchTerm('');
+                              }}
+                            >
+                              <td className="px-6 py-4 text-sm text-gray-900 font-medium">{adv.Adviser_Name}</td>
+                              <td className="px-6 py-4 text-sm text-right font-semibold text-gray-900">
+                                {formatCurrency(adv.calculated_aum_2024 || adv.Total_AUM)}
+                              </td>
+                              <td className="px-6 py-4 text-right">
+                                <div className={`text-sm font-semibold ${(adv.growth_rate_2y || 0) >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                                  {adv.growth_rate_2y !== null && adv.growth_rate_2y !== undefined
+                                    ? `${adv.growth_rate_2y >= 0 ? '+' : ''}${adv.growth_rate_2y.toFixed(1)}%`
+                                    : 'N/A'
+                                  }
+                                </div>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    ) : (
+                      <table className="w-full">
+                        <thead className="bg-gray-50 border-b">
+                          <tr>
+                            <th
+                              className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
+                              onClick={() => handleSort('Fund_Name')}
+                            >
+                              Fund Name {sortConfig.key === 'Fund_Name' && (sortConfig.direction === 'asc' ? '↑' : '↓')}
+                            </th>
+                            <th
+                              className="px-6 py-4 text-right text-xs font-semibold text-gray-600 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
+                              onClick={() => handleSort('Latest_Gross_Asset_Value')}
+                            >
+                              Current GAV {sortConfig.key === 'Latest_Gross_Asset_Value' && (sortConfig.direction === 'asc' ? '↑' : '↓')}
+                            </th>
+                            <th
+                              className="px-6 py-4 text-right text-xs font-semibold text-gray-600 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
+                              onClick={() => handleSort('growth_1y')}
+                            >
+                              1Y Growth {sortConfig.key === 'growth_1y' && (sortConfig.direction === 'asc' ? '↑' : '↓')}
+                            </th>
+                            <th
+                              className="px-6 py-4 text-right text-xs font-semibold text-gray-600 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
+                              onClick={() => handleSort('growth_2y')}
+                            >
+                              2Y Growth {sortConfig.key === 'growth_2y' && (sortConfig.direction === 'asc' ? '↑' : '↓')}
+                            </th>
+                            <th
+                              className="px-6 py-4 text-right text-xs font-semibold text-gray-600 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
+                              onClick={() => handleSort('growth_5y')}
+                            >
+                              5Y Growth {sortConfig.key === 'growth_5y' && (sortConfig.direction === 'asc' ? '↑' : '↓')}
+                            </th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-gray-200">
+                          {sortedItems.map((fund, idx) => (
+                            <tr
+                              key={`${fund.Fund_ID}-${idx}`}
+                              className="hover:bg-gray-50 transition-colors cursor-pointer"
+                              onClick={() => {
+                                setSelectedItem(fund);
+                                setShowAllSearchResults(false);
+                                setSearchTerm('');
+                              }}
+                            >
+                              <td className="px-6 py-4 text-sm text-gray-900 font-medium">{fund.Fund_Name}</td>
+                              <td className="px-6 py-4 text-sm text-right font-semibold text-gray-900">
+                                {formatCurrency(fund.Latest_Gross_Asset_Value)}
+                              </td>
+                              <td className="px-6 py-4 text-right">
+                                <div className={`text-sm font-semibold ${(fund.growth_1y || 0) >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                                  {fund.growth_1y !== null && fund.growth_1y !== undefined
+                                    ? `${fund.growth_1y >= 0 ? '+' : ''}${fund.growth_1y.toFixed(1)}%`
+                                    : 'N/A'
+                                  }
+                                </div>
+                              </td>
+                              <td className="px-6 py-4 text-right">
+                                <div className={`text-sm font-semibold ${(fund.growth_2y || 0) >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                                  {fund.growth_2y !== null && fund.growth_2y !== undefined
+                                    ? `${fund.growth_2y >= 0 ? '+' : ''}${fund.growth_2y.toFixed(1)}%`
+                                    : 'N/A'
+                                  }
+                                </div>
+                              </td>
+                              <td className="px-6 py-4 text-right">
+                                <div className={`text-sm font-semibold ${(fund.growth_5y || 0) >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                                  {fund.growth_5y !== null && fund.growth_5y !== undefined
+                                    ? `${fund.growth_5y >= 0 ? '+' : ''}${fund.growth_5y.toFixed(1)}%`
+                                    : 'N/A'
+                                  }
+                                </div>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    )}
+                  </div>
                 </div>
               )}
             </div>
@@ -773,85 +951,110 @@ const FundAnalyzer = () => {
                   <h4 className="text-sm font-semibold text-gray-700 mb-4">Historical {activeTab === 'funds' ? 'GAV' : 'AUM'}</h4>
                   {(() => {
                     const chartData = getChartData(selectedItem, activeTab === 'funds');
-                    console.log('Rendering chart for:', activeTab === 'funds' ? selectedItem.Fund_Name : selectedItem.Adviser_Name, 'Data points:', chartData.length);
                     if (chartData.length === 0) {
                       return <div className="text-sm text-gray-500">No historical data available for this {activeTab === 'funds' ? 'fund' : 'adviser'}</div>;
                     }
 
                     const maxValue = Math.max(...chartData.map(d => d.value));
                     const minValue = Math.min(...chartData.map(d => d.value));
-                    const valueRange = maxValue - minValue;
-                    const chartHeight = 200;
-                    const chartWidth = 100; // percentage
+                    const valueRange = maxValue - minValue || 1;
+                    const chartHeight = 300;
+                    const chartWidth = 100;
+                    const leftMargin = 15;
+                    const bottomMargin = 8;
+                    const availableHeight = chartHeight - bottomMargin;
 
-                    // Calculate points for the line
-                    const points = chartData.map((d, i) => {
-                      const x = (i / (chartData.length - 1)) * chartWidth;
-                      const y = chartHeight - ((d.value - minValue) / valueRange) * chartHeight;
-                      return `${x},${y}`;
-                    }).join(' ');
-
-                    // Create area path (same as line but closing to bottom)
-                    const areaPoints = chartData.map((d, i) => {
-                      const x = (i / (chartData.length - 1)) * chartWidth;
-                      const y = chartHeight - ((d.value - minValue) / valueRange) * chartHeight;
-                      return `${x},${y}`;
+                    // Create stepped line path
+                    const pathPoints = chartData.map((d, i) => {
+                      const x = leftMargin + (i / (chartData.length - 1)) * (chartWidth - leftMargin);
+                      const y = availableHeight - ((d.value - minValue) / valueRange) * availableHeight;
+                      return { x, y, value: d.value };
                     });
-                    const areaPath = `0,${chartHeight} ${areaPoints.join(' ')} ${chartWidth},${chartHeight}`;
+
+                    // Build stepped path (horizontal then vertical)
+                    let pathD = `M ${pathPoints[0].x} ${pathPoints[0].y}`;
+                    for (let i = 1; i < pathPoints.length; i++) {
+                      pathD += ` L ${pathPoints[i].x} ${pathPoints[i - 1].y}`;
+                      pathD += ` L ${pathPoints[i].x} ${pathPoints[i].y}`;
+                    }
+
+                    // Area fill path
+                    let areaD = `M ${leftMargin} ${availableHeight}`;
+                    areaD += ` L ${pathPoints[0].x} ${availableHeight}`;
+                    areaD += ` L ${pathPoints[0].x} ${pathPoints[0].y}`;
+                    for (let i = 1; i < pathPoints.length; i++) {
+                      areaD += ` L ${pathPoints[i].x} ${pathPoints[i - 1].y}`;
+                      areaD += ` L ${pathPoints[i].x} ${pathPoints[i].y}`;
+                    }
+                    areaD += ` L ${pathPoints[pathPoints.length - 1].x} ${availableHeight}`;
+                    areaD += ` Z`;
+
+                    // Y-axis labels
+                    const numYTicks = 5;
+                    const yTicks = Array.from({ length: numYTicks }, (_, i) => {
+                      const value = minValue + (valueRange / (numYTicks - 1)) * i;
+                      const y = availableHeight - ((value - minValue) / valueRange) * availableHeight;
+                      return { value, y };
+                    });
 
                     return (
                       <div>
                         <div className="relative" style={{ height: `${chartHeight}px` }}>
-                          <svg width="100%" height={chartHeight} viewBox={`0 0 ${chartWidth} ${chartHeight}`} preserveAspectRatio="none" className="absolute inset-0">
+                          {/* Y-axis labels */}
+                          {yTicks.map((tick, i) => (
+                            <div
+                              key={i}
+                              className="absolute text-xs text-gray-500"
+                              style={{
+                                top: `${tick.y}px`,
+                                left: '0',
+                                transform: 'translateY(-50%)',
+                                width: `${leftMargin - 1}%`,
+                                textAlign: 'right',
+                                paddingRight: '4px'
+                              }}
+                            >
+                              ${(tick.value / 1e9).toFixed(0)}B
+                            </div>
+                          ))}
+
+                          <svg width="100%" height={chartHeight} viewBox={`0 0 ${chartWidth} ${chartHeight}`} preserveAspectRatio="none">
                             {/* Area fill */}
-                            <polygon
-                              points={areaPath}
-                              fill="rgba(16, 185, 129, 0.1)"
+                            <path
+                              d={areaD}
+                              fill="rgba(16, 185, 129, 0.15)"
                               stroke="none"
                             />
-                            {/* Line */}
-                            <polyline
-                              points={points}
+                            {/* Stepped line */}
+                            <path
+                              d={pathD}
                               fill="none"
                               stroke="rgb(16, 185, 129)"
-                              strokeWidth="0.5"
+                              strokeWidth="0.6"
                               vectorEffect="non-scaling-stroke"
                             />
-                            {/* Data points */}
-                            {chartData.map((d, i) => {
-                              const x = (i / (chartData.length - 1)) * chartWidth;
-                              const y = chartHeight - ((d.value - minValue) / valueRange) * chartHeight;
-                              return (
+                            {/* Data point markers */}
+                            {pathPoints.map((point, i) => (
+                              <g key={i}>
                                 <circle
-                                  key={i}
-                                  cx={x}
-                                  cy={y}
-                                  r="0.8"
-                                  fill="rgb(16, 185, 129)"
+                                  cx={point.x}
+                                  cy={point.y}
+                                  r="1"
+                                  fill="white"
+                                  stroke="rgb(16, 185, 129)"
+                                  strokeWidth="0.5"
                                   vectorEffect="non-scaling-stroke"
                                 />
-                              );
-                            })}
+                              </g>
+                            ))}
                           </svg>
                         </div>
 
                         {/* X-axis labels */}
-                        <div className="flex justify-between mt-2 text-xs text-gray-600">
-                          <span>{chartData[0].year}</span>
-                          {chartData.length > 2 && <span>{chartData[Math.floor(chartData.length / 2)].year}</span>}
-                          <span>{chartData[chartData.length - 1].year}</span>
-                        </div>
-
-                        {/* Value labels */}
-                        <div className="mt-4 grid grid-cols-2 gap-4 text-sm">
-                          <div>
-                            <div className="text-gray-500">Current</div>
-                            <div className="font-bold text-emerald-600">{formatCurrency(chartData[chartData.length - 1].value)}</div>
-                          </div>
-                          <div>
-                            <div className="text-gray-500">Peak</div>
-                            <div className="font-bold text-gray-900">{formatCurrency(maxValue)}</div>
-                          </div>
+                        <div className="flex justify-between text-xs text-gray-600 mt-2" style={{ paddingLeft: `${leftMargin}%` }}>
+                          {chartData.map((d, i) => (
+                            <span key={i} className="flex-1 text-center">{d.year}</span>
+                          ))}
                         </div>
                       </div>
                     );
