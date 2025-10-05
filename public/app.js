@@ -294,12 +294,30 @@ const FundAnalyzer = () => {
 
   const adviserLeaderboards = useMemo(() => {
     const top10AUM = rankedAdvisers.slice(0, 10);
-    const top10Growth = [...rankedAdvisers]
-      .filter(a => a.growth_rate_2y !== null && a.growth_rate_2y !== undefined && !isNaN(a.growth_rate_2y))
+
+    // Filter advisers with starting AUM > $1,000 for growth calculations
+    const validGrowthAdvisers = rankedAdvisers.filter(a =>
+      a.growth_rate_2y !== null &&
+      a.growth_rate_2y !== undefined &&
+      !isNaN(a.growth_rate_2y) &&
+      a.calculated_aum_2022 > 1000  // Exclude small starting amounts
+    );
+
+    const top10Growth = [...validGrowthAdvisers]
       .sort((a, b) => (b.growth_rate_2y || 0) - (a.growth_rate_2y || 0))
       .slice(0, 10);
+
+    const top10AbsoluteGrowth = [...validGrowthAdvisers]
+      .map(a => ({
+        ...a,
+        absolute_growth_2y: (a.calculated_aum_2024 || 0) - (a.calculated_aum_2022 || 0)
+      }))
+      .sort((a, b) => b.absolute_growth_2y - a.absolute_growth_2y)
+      .slice(0, 10);
+
     const top10RankChange = [...rankedAdvisers].sort((a, b) => b.rank_change_2y - a.rank_change_2y).slice(0, 10);
-    return { top10AUM, top10Growth, top10RankChange };
+
+    return { top10AUM, top10Growth, top10AbsoluteGrowth, top10RankChange };
   }, [rankedAdvisers]);
 
   const fundsForAdviser = useMemo(() => {
@@ -387,7 +405,7 @@ const FundAnalyzer = () => {
                       <span className="text-xs text-green-600 font-semibold">+{adv.rank_change_2y}</span>
                       <span className="text-sm font-medium text-gray-900 truncate">{adv.Adviser_Name}</span>
                     </div>
-                    <span className="text-sm font-semibold text-gray-900 whitespace-nowrap">{formatCurrency(adv.Total_AUM)}</span>
+                    <span className="text-sm font-semibold text-gray-900 whitespace-nowrap">{formatCurrency(adv.Total_AUM, false)}</span>
                   </div>
                 ))}
               </div>
@@ -423,17 +441,21 @@ const FundAnalyzer = () => {
                 <div className="w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center">
                   <TrendingUpIcon />
                 </div>
-                <h3 className="font-semibold text-gray-900">Largest Rank ↗ (2y)</h3>
+                <h3 className="font-semibold text-gray-900">Largest $ Growth (2y)</h3>
               </div>
               <div className="space-y-2">
-                {adviserLeaderboards.top10RankChange.slice(0, 5).map((adv) => (
-                  <div key={adv.CRD} className="flex items-center justify-between gap-2">
-                    <div className="flex items-center gap-2 min-w-0 flex-1">
-                      <span className="text-sm font-semibold text-gray-900">{adv.rank_2024}</span>
-                      <span className="text-xs text-purple-600 font-semibold">+{adv.rank_change_2y}</span>
-                      <span className="text-sm font-medium text-gray-900 truncate">{adv.Adviser_Name}</span>
+                {adviserLeaderboards.top10AbsoluteGrowth.slice(0, 5).map((adv, idx) => (
+                  <div key={adv.CRD} className="flex flex-col gap-1">
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-2 min-w-0 flex-1">
+                        <span className="text-sm font-semibold text-gray-900">{idx + 1}</span>
+                        <span className="text-sm font-medium text-gray-900 truncate">{adv.Adviser_Name}</span>
+                      </div>
+                      <span className="text-sm font-semibold text-purple-600 whitespace-nowrap">+{formatCurrency(adv.absolute_growth_2y, false)}</span>
                     </div>
-                    <span className="text-sm font-semibold text-gray-900 whitespace-nowrap">{formatCurrency(adv.Total_AUM)}</span>
+                    <div className="text-xs text-gray-500 ml-6">
+                      {formatCurrency(adv.calculated_aum_2022, false)} → {formatCurrency(adv.calculated_aum_2024, false)}
+                    </div>
                   </div>
                 ))}
               </div>
