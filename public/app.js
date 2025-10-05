@@ -163,16 +163,27 @@ const FundAnalyzer = () => {
             totalAUM = aum2024 || fundTotalsByCRD[adv.CRD];
           }
 
+          // Get yearly AUM values for growth calculations
+          const aum2023 = aumByYear.AUM_2023;
           const aum2022 = aumByYear.AUM_2022;
+          const aum2019 = aumByYear.AUM_2019;
 
           return {
             ...adv,
             ...aumByYear,
             Total_AUM: totalAUM,  // Keep calculated value, don't default to 0
             calculated_aum_2024: aum2024,
+            calculated_aum_2023: aum2023,
             calculated_aum_2022: aum2022,
+            calculated_aum_2019: aum2019,
+            growth_rate_1y: aum2023 && aum2024 && aum2023 > 0
+              ? ((aum2024 - aum2023) / aum2023) * 100
+              : null,
             growth_rate_2y: aum2022 && aum2024 && aum2022 > 0
               ? ((aum2024 - aum2022) / aum2022) * 100
+              : null,
+            growth_rate_5y: aum2019 && aum2024 && aum2019 > 0
+              ? ((aum2024 - aum2019) / aum2019) * 100
               : null
           };
         });
@@ -853,10 +864,14 @@ const FundAnalyzer = () => {
                     </div>
                     <div>
                       <div className="text-sm text-gray-500 mb-1">1Y Growth</div>
-                      <div className={`text-2xl font-bold ${(activeTab === 'funds' ? selectedItem.growth_1y : null) >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                        {activeTab === 'funds' && selectedItem.growth_1y !== null && selectedItem.growth_1y !== undefined
-                          ? `${selectedItem.growth_1y >= 0 ? '+' : ''}${selectedItem.growth_1y.toFixed(1)}%`
-                          : 'N/A'
+                      <div className={`text-2xl font-bold ${(activeTab === 'advisers' ? selectedItem.growth_rate_1y : selectedItem.growth_1y) >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                        {activeTab === 'advisers'
+                          ? selectedItem.growth_rate_1y !== null && selectedItem.growth_rate_1y !== undefined
+                            ? `${selectedItem.growth_rate_1y >= 0 ? '+' : ''}${selectedItem.growth_rate_1y.toFixed(1)}%`
+                            : 'N/A'
+                          : selectedItem.growth_1y !== null && selectedItem.growth_1y !== undefined
+                            ? `${selectedItem.growth_1y >= 0 ? '+' : ''}${selectedItem.growth_1y.toFixed(1)}%`
+                            : 'N/A'
                         }
                       </div>
                     </div>
@@ -864,17 +879,25 @@ const FundAnalyzer = () => {
                       <div className="text-sm text-gray-500 mb-1">2Y Growth</div>
                       <div className={`text-2xl font-bold ${(activeTab === 'advisers' ? selectedItem.growth_rate_2y : selectedItem.growth_2y) >= 0 ? 'text-green-600' : 'text-red-600'}`}>
                         {activeTab === 'advisers'
-                          ? selectedItem.growth_rate_2y ? `${selectedItem.growth_rate_2y >= 0 ? '+' : ''}${selectedItem.growth_rate_2y.toFixed(1)}%` : 'N/A'
-                          : selectedItem.growth_2y ? `${selectedItem.growth_2y >= 0 ? '+' : ''}${selectedItem.growth_2y.toFixed(1)}%` : 'N/A'
+                          ? selectedItem.growth_rate_2y !== null && selectedItem.growth_rate_2y !== undefined
+                            ? `${selectedItem.growth_rate_2y >= 0 ? '+' : ''}${selectedItem.growth_rate_2y.toFixed(1)}%`
+                            : 'N/A'
+                          : selectedItem.growth_2y !== null && selectedItem.growth_2y !== undefined
+                            ? `${selectedItem.growth_2y >= 0 ? '+' : ''}${selectedItem.growth_2y.toFixed(1)}%`
+                            : 'N/A'
                         }
                       </div>
                     </div>
                     <div>
                       <div className="text-sm text-gray-500 mb-1">5Y Growth</div>
-                      <div className={`text-2xl font-bold ${(activeTab === 'funds' ? selectedItem.growth_5y : null) >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                        {activeTab === 'funds' && selectedItem.growth_5y !== null && selectedItem.growth_5y !== undefined
-                          ? `${selectedItem.growth_5y >= 0 ? '+' : ''}${selectedItem.growth_5y.toFixed(1)}%`
-                          : 'N/A'
+                      <div className={`text-2xl font-bold ${(activeTab === 'advisers' ? selectedItem.growth_rate_5y : selectedItem.growth_5y) >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                        {activeTab === 'advisers'
+                          ? selectedItem.growth_rate_5y !== null && selectedItem.growth_rate_5y !== undefined
+                            ? `${selectedItem.growth_rate_5y >= 0 ? '+' : ''}${selectedItem.growth_rate_5y.toFixed(1)}%`
+                            : 'N/A'
+                          : selectedItem.growth_5y !== null && selectedItem.growth_5y !== undefined
+                            ? `${selectedItem.growth_5y >= 0 ? '+' : ''}${selectedItem.growth_5y.toFixed(1)}%`
+                            : 'N/A'
                         }
                       </div>
                     </div>
