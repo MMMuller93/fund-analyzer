@@ -75,6 +75,20 @@ const FundAnalyzer = () => {
       const advisersData = await advisersRes.json();
       console.log('Advisers loaded:', advisersData.length);
 
+      // Debug: Check first adviser's data structure
+      if (advisersData.length > 0) {
+        const firstAdviser = advisersData[0];
+        console.log('First adviser sample:', {
+          name: firstAdviser.Adviser_Name,
+          CRD: firstAdviser.CRD,
+          Total_AUM: firstAdviser.Total_AUM,
+          AUM_2024: firstAdviser.AUM_2024,
+          AUM_2023: firstAdviser.AUM_2023,
+          AUM_2022: firstAdviser.AUM_2022,
+          hasYearlyData: !!(firstAdviser.AUM_2024 || firstAdviser.AUM_2023 || firstAdviser.AUM_2022)
+        });
+      }
+
       // Load funds in batches (paginated)
       const BATCH_SIZE = 5000;
       let fundsData = [];
@@ -163,6 +177,19 @@ const FundAnalyzer = () => {
           }
 
           const aum2022 = aumByYear.AUM_2022;
+
+          // Debug: Log first 3 advisers' enriched data
+          const advIndex = advisersData.filter(a => a.Adviser_Name).indexOf(adv);
+          if (advIndex < 3) {
+            console.log(`\nEnriched adviser #${advIndex + 1}: ${adv.Adviser_Name} (CRD: ${adv.CRD})`);
+            console.log('  Original Total_AUM from sheet:', adv.Total_AUM);
+            console.log('  Parsed totalAUM:', totalAUM);
+            console.log('  calculated_aum_2024:', aum2024);
+            console.log('  calculated_aum_2022:', aum2022);
+            console.log('  AUM_2024 from aumByYear:', aumByYear.AUM_2024);
+            console.log('  Fund GAV total for this adviser:', fundTotalsByCRD[adv.CRD]);
+            console.log('  Fund yearly 2024:', fundYearlyTotalsByCRD[adv.CRD]?.[2024]);
+          }
 
           return {
             ...adv,
