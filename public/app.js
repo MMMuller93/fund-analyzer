@@ -1,5 +1,5 @@
 const { useState, useEffect, useMemo } = React;
-// Charts removed for production deployment - using table view only
+const { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } = Recharts;
 
 // Icons
 const SearchIcon = () => (
@@ -106,7 +106,7 @@ const FundAnalyzer = () => {
       // Calculate fund totals by CRD
       const fundTotalsByCRD = {};
       const fundYearlyTotalsByCRD = {};
-      
+
       fundsData.forEach(fund => {
         const crd = fund.Adviser_Entity_CRD;
         if (!crd) return;
@@ -440,14 +440,6 @@ const FundAnalyzer = () => {
         value: isFund ? item[`GAV_${year}`] : item[`AUM_${year}`]
       }))
       .filter(d => d.value !== null && d.value !== undefined && d.value > 0);
-
-    console.log('getChartData called for:', isFund ? item.Fund_Name : item.Adviser_Name);
-    console.log('  isFund:', isFund, 'timeFilter:', timeFilter);
-    console.log('  allData length:', allData.length);
-    console.log('  Sample data:', allData.slice(0, 3));
-    console.log('  Item has AUM_2024?', item.AUM_2024);
-    console.log('  Item has AUM_2023?', item.AUM_2023);
-    console.log('  Item has GAV_2024?', item.GAV_2024);
 
     if (timeFilter === 'All') return allData;
 
@@ -947,7 +939,7 @@ const FundAnalyzer = () => {
                   ))}
                 </div>
 
-                <div className="bg-gray-50 rounded-lg p-6">
+                <div className="bg-gray-50 rounded-lg p-4">
                   <h4 className="text-sm font-semibold text-gray-700 mb-4">Historical {activeTab === 'funds' ? 'GAV' : 'AUM'}</h4>
                   {(() => {
                     const chartData = getChartData(selectedItem, activeTab === 'funds');
@@ -955,107 +947,48 @@ const FundAnalyzer = () => {
                       return <div className="text-sm text-gray-500">No historical data available for this {activeTab === 'funds' ? 'fund' : 'adviser'}</div>;
                     }
 
-                    const maxValue = Math.max(...chartData.map(d => d.value));
-                    const minValue = Math.min(...chartData.map(d => d.value));
-                    const valueRange = maxValue - minValue || 1;
-                    const chartHeight = 300;
-                    const chartWidth = 100;
-                    const leftMargin = 15;
-                    const bottomMargin = 8;
-                    const availableHeight = chartHeight - bottomMargin;
-
-                    // Create stepped line path
-                    const pathPoints = chartData.map((d, i) => {
-                      const x = leftMargin + (i / (chartData.length - 1)) * (chartWidth - leftMargin);
-                      const y = availableHeight - ((d.value - minValue) / valueRange) * availableHeight;
-                      return { x, y, value: d.value };
-                    });
-
-                    // Build stepped path (horizontal then vertical)
-                    let pathD = `M ${pathPoints[0].x} ${pathPoints[0].y}`;
-                    for (let i = 1; i < pathPoints.length; i++) {
-                      pathD += ` L ${pathPoints[i].x} ${pathPoints[i - 1].y}`;
-                      pathD += ` L ${pathPoints[i].x} ${pathPoints[i].y}`;
-                    }
-
-                    // Area fill path
-                    let areaD = `M ${leftMargin} ${availableHeight}`;
-                    areaD += ` L ${pathPoints[0].x} ${availableHeight}`;
-                    areaD += ` L ${pathPoints[0].x} ${pathPoints[0].y}`;
-                    for (let i = 1; i < pathPoints.length; i++) {
-                      areaD += ` L ${pathPoints[i].x} ${pathPoints[i - 1].y}`;
-                      areaD += ` L ${pathPoints[i].x} ${pathPoints[i].y}`;
-                    }
-                    areaD += ` L ${pathPoints[pathPoints.length - 1].x} ${availableHeight}`;
-                    areaD += ` Z`;
-
-                    // Y-axis labels
-                    const numYTicks = 5;
-                    const yTicks = Array.from({ length: numYTicks }, (_, i) => {
-                      const value = minValue + (valueRange / (numYTicks - 1)) * i;
-                      const y = availableHeight - ((value - minValue) / valueRange) * availableHeight;
-                      return { value, y };
-                    });
-
                     return (
-                      <div>
-                        <div className="relative" style={{ height: `${chartHeight}px` }}>
-                          {/* Y-axis labels */}
-                          {yTicks.map((tick, i) => (
-                            <div
-                              key={i}
-                              className="absolute text-xs text-gray-500"
-                              style={{
-                                top: `${tick.y}px`,
-                                left: '0',
-                                transform: 'translateY(-50%)',
-                                width: `${leftMargin - 1}%`,
-                                textAlign: 'right',
-                                paddingRight: '4px'
+                      <div className="h-96">
+                        <ResponsiveContainer width="100%" height="100%">
+                          <AreaChart
+                            data={chartData}
+                            margin={{ top: 10, right: 30, left: 0, bottom: 0 }}
+                          >
+                            <defs>
+                              <linearGradient id="gradient" x1="0" y1="0" x2="0" y2="1">
+                                <stop offset="5%" stopColor="#10b981" stopOpacity={0.3}/>
+                                <stop offset="95%" stopColor="#10b981" stopOpacity={0}/>
+                              </linearGradient>
+                            </defs>
+                            <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                            <XAxis
+                              dataKey="year"
+                              tick={{ fill: '#6b7280', fontSize: 12 }}
+                              tickLine={{ stroke: '#6b7280' }}
+                            />
+                            <YAxis
+                              tickFormatter={(value) => formatCurrency(value)}
+                              tick={{ fill: '#6b7280', fontSize: 12 }}
+                              tickLine={{ stroke: '#6b7280' }}
+                            />
+                            <Tooltip
+                              contentStyle={{
+                                backgroundColor: 'white',
+                                border: '1px solid #e5e7eb',
+                                borderRadius: '8px',
+                                boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
                               }}
-                            >
-                              ${(tick.value / 1e9).toFixed(0)}B
-                            </div>
-                          ))}
-
-                          <svg width="100%" height={chartHeight} viewBox={`0 0 ${chartWidth} ${chartHeight}`} preserveAspectRatio="none">
-                            {/* Area fill */}
-                            <path
-                              d={areaD}
-                              fill="rgba(16, 185, 129, 0.15)"
-                              stroke="none"
+                              formatter={(value) => [formatCurrency(value, false), activeTab === 'funds' ? 'GAV' : 'AUM']}
                             />
-                            {/* Stepped line */}
-                            <path
-                              d={pathD}
-                              fill="none"
-                              stroke="rgb(16, 185, 129)"
-                              strokeWidth="0.6"
-                              vectorEffect="non-scaling-stroke"
+                            <Area
+                              type="stepAfter"
+                              dataKey="value"
+                              stroke="#10b981"
+                              strokeWidth={2}
+                              fill="url(#gradient)"
                             />
-                            {/* Data point markers */}
-                            {pathPoints.map((point, i) => (
-                              <g key={i}>
-                                <circle
-                                  cx={point.x}
-                                  cy={point.y}
-                                  r="1"
-                                  fill="white"
-                                  stroke="rgb(16, 185, 129)"
-                                  strokeWidth="0.5"
-                                  vectorEffect="non-scaling-stroke"
-                                />
-                              </g>
-                            ))}
-                          </svg>
-                        </div>
-
-                        {/* X-axis labels */}
-                        <div className="flex justify-between text-xs text-gray-600 mt-2" style={{ paddingLeft: `${leftMargin}%` }}>
-                          {chartData.map((d, i) => (
-                            <span key={i} className="flex-1 text-center">{d.year}</span>
-                          ))}
-                        </div>
+                          </AreaChart>
+                        </ResponsiveContainer>
                       </div>
                     );
                   })()}
