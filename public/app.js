@@ -1,5 +1,4 @@
-const { useState, useEffect, useMemo } = React;
-const { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } = Recharts;
+const { useState, useEffect, useMemo, useRef } = React;
 
 // Icons
 const SearchIcon = () => (
@@ -22,6 +21,138 @@ const AwardIcon = () => (
     <polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"></polyline>
   </svg>
 );
+
+// Custom Stepped Area Chart Component using Chart.js
+const SteppedAreaChart = ({ data, label }) => {
+  const canvasRef = useRef(null);
+  const chartRef = useRef(null);
+
+  useEffect(() => {
+    if (!canvasRef.current || data.length === 0) return;
+
+    // Destroy existing chart
+    if (chartRef.current) {
+      chartRef.current.destroy();
+    }
+
+    const ctx = canvasRef.current.getContext('2d');
+
+    chartRef.current = new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels: data.map(d => d.year),
+        datasets: [{
+          label: label,
+          data: data.map(d => d.value),
+          stepped: 'after', // This creates the step effect!
+          borderColor: '#10b981',
+          backgroundColor: (context) => {
+            const chart = context.chart;
+            const {ctx, chartArea} = chart;
+            if (!chartArea) return null;
+
+            const gradient = ctx.createLinearGradient(0, chartArea.top, 0, chartArea.bottom);
+            gradient.addColorStop(0.05, 'rgba(16, 185, 129, 0.3)');
+            gradient.addColorStop(0.95, 'rgba(16, 185, 129, 0)');
+            return gradient;
+          },
+          borderWidth: 2,
+          fill: true,
+          tension: 0
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: {
+            display: false
+          },
+          tooltip: {
+            backgroundColor: 'white',
+            borderColor: '#e5e7eb',
+            borderWidth: 1,
+            titleColor: '#111827',
+            bodyColor: '#111827',
+            padding: 12,
+            boxPadding: 6,
+            usePointStyle: true,
+            callbacks: {
+              label: (context) => {
+                const value = context.parsed.y;
+                if (value >= 1e9) return `${label}: $${(value / 1e9).toFixed(2)}B`;
+                if (value >= 1e6) return `${label}: $${(value / 1e6).toFixed(2)}M`;
+                if (value >= 1e3) return `${label}: $${(value / 1e3).toFixed(2)}K`;
+                return `${label}: $${value.toLocaleString()}`;
+              }
+            }
+          }
+        },
+        scales: {
+          x: {
+            grid: {
+              color: '#e5e7eb',
+              drawBorder: false,
+              drawTicks: false
+            },
+            ticks: {
+              color: '#6b7280',
+              font: {
+                size: 12
+              },
+              padding: 8
+            }
+          },
+          y: {
+            grid: {
+              color: '#e5e7eb',
+              drawBorder: false,
+              drawTicks: false
+            },
+            ticks: {
+              color: '#6b7280',
+              font: {
+                size: 12
+              },
+              padding: 8,
+              callback: (value) => {
+                if (value >= 1e9) return `$${(value / 1e9).toFixed(0)}B`;
+                if (value >= 1e6) return `$${(value / 1e6).toFixed(0)}M`;
+                if (value >= 1e3) return `$${(value / 1e3).toFixed(0)}K`;
+                return `$${value}`;
+              }
+            }
+          }
+        }
+      }
+    });
+
+    // Cleanup on unmount
+    return () => {
+      if (chartRef.current) {
+        chartRef.current.destroy();
+      }
+    };
+  }, [data, label]);
+
+  if (data.length === 0) {
+    return (
+      <div className="bg-gray-50 rounded-lg p-4">
+        <h4 className="text-sm font-semibold text-gray-700 mb-4">Historical {label}</h4>
+        <div className="text-sm text-gray-500">No historical data available</div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="bg-gray-50 rounded-lg p-4">
+      <h4 className="text-sm font-semibold text-gray-700 mb-4">Historical {label}</h4>
+      <div className="h-96">
+        <canvas ref={canvasRef}></canvas>
+      </div>
+    </div>
+  );
+};
 
 const FundAnalyzer = () => {
   const [advisers, setAdvisers] = useState([]);
@@ -962,60 +1093,10 @@ const FundAnalyzer = () => {
                   ))}
                 </div>
 
-                <div className="bg-gray-50 rounded-lg p-4">
-                  <h4 className="text-sm font-semibold text-gray-700 mb-4">Historical {activeTab === 'funds' ? 'GAV' : 'AUM'}</h4>
-                  {(() => {
-                    const chartData = getChartData(selectedItem, activeTab === 'funds');
-                    if (chartData.length === 0) {
-                      return <div className="text-sm text-gray-500">No historical data available for this {activeTab === 'funds' ? 'fund' : 'adviser'}</div>;
-                    }
-
-                    return (
-                      <div className="h-96">
-                        <ResponsiveContainer width="100%" height="100%">
-                          <AreaChart
-                            data={chartData}
-                            margin={{ top: 10, right: 30, left: 0, bottom: 0 }}
-                          >
-                            <defs>
-                              <linearGradient id="gradient" x1="0" y1="0" x2="0" y2="1">
-                                <stop offset="5%" stopColor="#10b981" stopOpacity={0.3}/>
-                                <stop offset="95%" stopColor="#10b981" stopOpacity={0}/>
-                              </linearGradient>
-                            </defs>
-                            <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-                            <XAxis
-                              dataKey="year"
-                              tick={{ fill: '#6b7280', fontSize: 12 }}
-                              tickLine={{ stroke: '#6b7280' }}
-                            />
-                            <YAxis
-                              tickFormatter={(value) => formatCurrency(value)}
-                              tick={{ fill: '#6b7280', fontSize: 12 }}
-                              tickLine={{ stroke: '#6b7280' }}
-                            />
-                            <Tooltip
-                              contentStyle={{
-                                backgroundColor: 'white',
-                                border: '1px solid #e5e7eb',
-                                borderRadius: '8px',
-                                boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
-                              }}
-                              formatter={(value) => [formatCurrency(value, false), activeTab === 'funds' ? 'GAV' : 'AUM']}
-                            />
-                            <Area
-                              type="stepAfter"
-                              dataKey="value"
-                              stroke="#10b981"
-                              strokeWidth={2}
-                              fill="url(#gradient)"
-                            />
-                          </AreaChart>
-                        </ResponsiveContainer>
-                      </div>
-                    );
-                  })()}
-                </div>
+                <SteppedAreaChart
+                  data={getChartData(selectedItem, activeTab === 'funds')}
+                  label={activeTab === 'funds' ? 'GAV' : 'AUM'}
+                />
 
                 {activeTab === 'advisers' && selectedAdviser && fundsForAdviser.length > 0 && (
                   <div className="mt-8">
