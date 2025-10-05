@@ -768,8 +768,9 @@ const FundAnalyzer = () => {
                   <div className="space-y-3">
                     {(() => {
                       const chartData = getChartData(selectedItem, activeTab === 'funds');
+                      console.log('Rendering chart for:', activeTab === 'funds' ? selectedItem.Fund_Name : selectedItem.Adviser_Name, 'Data points:', chartData.length);
                       if (chartData.length === 0) {
-                        return <div className="text-sm text-gray-500">No historical data available</div>;
+                        return <div className="text-sm text-gray-500">No historical data available for this {activeTab === 'funds' ? 'fund' : 'adviser'}</div>;
                       }
                       const maxValue = Math.max(...chartData.map(d => d.value));
                       return chartData.map((item, idx) => (
