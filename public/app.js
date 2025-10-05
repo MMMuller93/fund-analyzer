@@ -62,23 +62,43 @@ const FundAnalyzer = () => {
       setLoading(true);
       console.log('Starting data load from Supabase...');
 
-      const [advisersRes, fundsRes] = await Promise.all([
-        fetch(`${SUPABASE_URL}/rest/v1/Advisers?select=*`, { headers: supabaseHeaders }),
-        fetch(`${SUPABASE_URL}/rest/v1/Funds?select=*`, { headers: supabaseHeaders })
-      ]);
+      // Load advisers
+      const advisersRes = await fetch(`${SUPABASE_URL}/rest/v1/Advisers?select=*`, { headers: supabaseHeaders });
 
-      console.log('Fetch complete. Advisers status:', advisersRes.status, 'Funds status:', fundsRes.status);
-
-      if (!advisersRes.ok || !fundsRes.ok) {
-        const advError = !advisersRes.ok ? await advisersRes.text() : '';
-        const fundError = !fundsRes.ok ? await fundsRes.text() : '';
-        throw new Error(`Failed to fetch data. Advisers: ${advError}, Funds: ${fundError}`);
+      if (!advisersRes.ok) {
+        const error = await advisersRes.text();
+        throw new Error(`Failed to fetch advisers: ${error}`);
       }
 
       const advisersData = await advisersRes.json();
-      const fundsData = await fundsRes.json();
+      console.log('Advisers loaded:', advisersData.length);
 
-      console.log('Data loaded. Advisers:', advisersData.length, 'Funds:', fundsData.length);
+      // Load funds in batches (paginated)
+      const BATCH_SIZE = 5000;
+      let fundsData = [];
+      let offset = 0;
+      let hasMore = true;
+
+      while (hasMore) {
+        console.log(`Loading funds batch ${offset / BATCH_SIZE + 1}...`);
+        const fundsRes = await fetch(
+          `${SUPABASE_URL}/rest/v1/Funds?select=*&limit=${BATCH_SIZE}&offset=${offset}`,
+          { headers: supabaseHeaders }
+        );
+
+        if (!fundsRes.ok) {
+          const error = await fundsRes.text();
+          throw new Error(`Failed to fetch funds: ${error}`);
+        }
+
+        const batch = await fundsRes.json();
+        fundsData = fundsData.concat(batch);
+
+        hasMore = batch.length === BATCH_SIZE;
+        offset += BATCH_SIZE;
+      }
+
+      console.log('Total funds loaded:', fundsData.length);
 
       // Calculate fund totals by CRD
       const fundTotalsByCRD = {};
