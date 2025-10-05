@@ -185,30 +185,36 @@ const FundAnalyzer = () => {
           // Parse all yearly GAV values
           const gavByYear = {};
           const years = ['2011', '2012', '2013', '2014', '2015', '2016', '2017', '2018', '2019', '2020', '2021', '2022', '2023', '2024'];
+          const availableYears = [];
           years.forEach(year => {
             const gav = parseCurrency(fund[`GAV_${year}`]);
             if (gav) {
               gavByYear[`GAV_${year}`] = gav;
+              availableYears.push({ year: parseInt(year), value: gav });
             }
           });
 
-          const gav2019 = gavByYear.GAV_2019;
-          const gav2022 = gavByYear.GAV_2022;
-          const gav2023 = gavByYear.GAV_2023;
-          const gav2024 = gavByYear.GAV_2024;
+          // Sort available years
+          availableYears.sort((a, b) => b.year - a.year);
+
+          // Calculate growth using most recent available data
+          const mostRecent = availableYears[0];
+          const oneYearAgo = availableYears.find(y => y.year === mostRecent?.year - 1);
+          const twoYearsAgo = availableYears.find(y => y.year === mostRecent?.year - 2);
+          const fiveYearsAgo = availableYears.find(y => y.year === mostRecent?.year - 5);
 
           return {
             ...fund,
             ...gavByYear,
             Latest_Gross_Asset_Value: latestGAV,
-            growth_1y: gav2023 && gav2024 && gav2023 > 0
-              ? ((gav2024 - gav2023) / gav2023) * 100
+            growth_1y: mostRecent && oneYearAgo
+              ? ((mostRecent.value - oneYearAgo.value) / oneYearAgo.value) * 100
               : null,
-            growth_2y: gav2022 && gav2024 && gav2022 > 0
-              ? ((gav2024 - gav2022) / gav2022) * 100
+            growth_2y: mostRecent && twoYearsAgo
+              ? ((mostRecent.value - twoYearsAgo.value) / twoYearsAgo.value) * 100
               : null,
-            growth_5y: gav2019 && gav2024 && gav2019 > 0
-              ? ((gav2024 - gav2019) / gav2019) * 100
+            growth_5y: mostRecent && fiveYearsAgo
+              ? ((mostRecent.value - fiveYearsAgo.value) / fiveYearsAgo.value) * 100
               : null
           };
         });
