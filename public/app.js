@@ -339,12 +339,12 @@ const FundAnalyzer = () => {
   const adviserLeaderboards = useMemo(() => {
     const top10AUM = rankedAdvisers.slice(0, 10);
 
-    // Filter advisers with starting AUM > $1,000 for growth calculations
+    // Filter advisers with starting AUM > $10M for growth calculations to avoid inflated percentages
     const validGrowthAdvisers = rankedAdvisers.filter(a =>
       a.growth_rate_2y !== null &&
       a.growth_rate_2y !== undefined &&
       !isNaN(a.growth_rate_2y) &&
-      a.calculated_aum_2022 > 1000  // Exclude small starting amounts
+      a.calculated_aum_2022 > 10000000  // Exclude funds starting below $10M
     );
 
     const top10Growth = [...validGrowthAdvisers]
@@ -469,11 +469,11 @@ const FundAnalyzer = () => {
               </div>
               <div className="space-y-2">
                 {adviserLeaderboards.top10AUM.slice(0, 5).map((adv) => (
-                  <div key={adv.CRD} className="flex items-center justify-between gap-2">
-                    <div className="flex items-center gap-2 min-w-0 flex-1">
-                      <span className="text-sm font-semibold text-gray-900">{adv.rank_2024}</span>
-                      <span className="text-xs text-green-600 font-semibold">+{adv.rank_change_2y}</span>
-                      <span className="text-sm font-medium text-gray-900 truncate">{adv.Adviser_Name}</span>
+                  <div key={adv.CRD} className="flex items-start justify-between gap-2">
+                    <div className="flex items-start gap-2 flex-1">
+                      <span className="text-sm font-semibold text-gray-900 mt-0.5">{adv.rank_2024}</span>
+                      <span className="text-xs text-green-600 font-semibold mt-1">+{adv.rank_change_2y}</span>
+                      <span className="text-sm font-medium text-gray-900 break-words">{adv.Adviser_Name}</span>
                     </div>
                     <span className="text-sm font-semibold text-gray-900 whitespace-nowrap">{formatCurrency(adv.Total_AUM, false)}</span>
                   </div>
@@ -491,15 +491,15 @@ const FundAnalyzer = () => {
               <div className="space-y-2">
                 {adviserLeaderboards.top10Growth.slice(0, 5).map((adv, idx) => (
                   <div key={adv.CRD} className="flex flex-col gap-1">
-                    <div className="flex items-center justify-between gap-2">
-                      <div className="flex items-center gap-2 min-w-0 flex-1">
-                        <span className="text-sm font-semibold text-gray-900">{idx + 1}</span>
-                        <span className="text-sm font-medium text-gray-900 truncate">{adv.Adviser_Name}</span>
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex items-start gap-2 flex-1">
+                        <span className="text-sm font-semibold text-gray-900 mt-0.5">{idx + 1}</span>
+                        <span className="text-sm font-medium text-gray-900 break-words">{adv.Adviser_Name}</span>
                       </div>
                       <span className="text-sm font-semibold text-green-600 whitespace-nowrap">+{adv.growth_rate_2y?.toFixed(1)}%</span>
                     </div>
                     <div className="text-xs text-gray-500 ml-6">
-                      {formatCurrency(adv.calculated_aum_2022)} → {formatCurrency(adv.calculated_aum_2024)}
+                      {formatCurrency(adv.calculated_aum_2022, false)} → {formatCurrency(adv.calculated_aum_2024, false)}
                     </div>
                   </div>
                 ))}
@@ -516,10 +516,10 @@ const FundAnalyzer = () => {
               <div className="space-y-2">
                 {adviserLeaderboards.top10AbsoluteGrowth.slice(0, 5).map((adv, idx) => (
                   <div key={adv.CRD} className="flex flex-col gap-1">
-                    <div className="flex items-center justify-between gap-2">
-                      <div className="flex items-center gap-2 min-w-0 flex-1">
-                        <span className="text-sm font-semibold text-gray-900">{idx + 1}</span>
-                        <span className="text-sm font-medium text-gray-900 truncate">{adv.Adviser_Name}</span>
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex items-start gap-2 flex-1">
+                        <span className="text-sm font-semibold text-gray-900 mt-0.5">{idx + 1}</span>
+                        <span className="text-sm font-medium text-gray-900 break-words">{adv.Adviser_Name}</span>
                       </div>
                       <span className="text-sm font-semibold text-purple-600 whitespace-nowrap">+{formatCurrency(adv.absolute_growth_2y, false)}</span>
                     </div>
