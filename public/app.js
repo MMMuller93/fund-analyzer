@@ -413,13 +413,13 @@ const FundAnalyzer = () => {
       }))
       .filter(d => d.value !== null && d.value !== undefined && d.value > 0);
 
-    console.log('getChartData called:', {
-      itemName: isFund ? item.Fund_Name : item.Adviser_Name,
-      isFund,
-      timeFilter,
-      allDataLength: allData.length,
-      sampleData: allData.slice(0, 3)
-    });
+    console.log('getChartData called for:', isFund ? item.Fund_Name : item.Adviser_Name);
+    console.log('  isFund:', isFund, 'timeFilter:', timeFilter);
+    console.log('  allData length:', allData.length);
+    console.log('  Sample data:', allData.slice(0, 3));
+    console.log('  Item has AUM_2024?', item.AUM_2024);
+    console.log('  Item has AUM_2023?', item.AUM_2023);
+    console.log('  Item has GAV_2024?', item.GAV_2024);
 
     if (timeFilter === 'All') return allData;
 
