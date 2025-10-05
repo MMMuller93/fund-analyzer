@@ -451,6 +451,14 @@ const FundAnalyzer = () => {
       }))
       .filter(d => d.value !== null && d.value !== undefined && d.value > 0);
 
+    console.log('getChartData called:', {
+      itemName: isFund ? item.Fund_Name : item.Adviser_Name,
+      isFund,
+      timeFilter,
+      allDataLength: allData.length,
+      sampleData: allData.slice(0, 3)
+    });
+
     if (timeFilter === 'All') return allData;
 
     const currentYear = 2024;
@@ -692,7 +700,7 @@ const FundAnalyzer = () => {
                   <h2 className="text-3xl font-bold text-gray-900 mb-6">
                     {activeTab === 'advisers' ? selectedItem.Adviser_Name : selectedItem.Fund_Name}
                   </h2>
-                  <div className="grid grid-cols-4 gap-6">
+                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6">
                     <div>
                       <div className="text-sm text-gray-500 mb-1">{activeTab === 'advisers' ? 'Current AUM' : 'Current GAV'}</div>
                       <div className="text-2xl font-bold text-gray-900">
@@ -700,7 +708,16 @@ const FundAnalyzer = () => {
                       </div>
                     </div>
                     <div>
-                      <div className="text-sm text-gray-500 mb-1">2-Year Growth</div>
+                      <div className="text-sm text-gray-500 mb-1">1Y Growth</div>
+                      <div className={`text-2xl font-bold ${(activeTab === 'funds' ? selectedItem.growth_1y : null) >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                        {activeTab === 'funds' && selectedItem.growth_1y !== null && selectedItem.growth_1y !== undefined
+                          ? `${selectedItem.growth_1y >= 0 ? '+' : ''}${selectedItem.growth_1y.toFixed(1)}%`
+                          : 'N/A'
+                        }
+                      </div>
+                    </div>
+                    <div>
+                      <div className="text-sm text-gray-500 mb-1">2Y Growth</div>
                       <div className={`text-2xl font-bold ${(activeTab === 'advisers' ? selectedItem.growth_rate_2y : selectedItem.growth_2y) >= 0 ? 'text-green-600' : 'text-red-600'}`}>
                         {activeTab === 'advisers'
                           ? selectedItem.growth_rate_2y ? `${selectedItem.growth_rate_2y >= 0 ? '+' : ''}${selectedItem.growth_rate_2y.toFixed(1)}%` : 'N/A'
@@ -709,14 +726,23 @@ const FundAnalyzer = () => {
                       </div>
                     </div>
                     <div>
+                      <div className="text-sm text-gray-500 mb-1">5Y Growth</div>
+                      <div className={`text-2xl font-bold ${(activeTab === 'funds' ? selectedItem.growth_5y : null) >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                        {activeTab === 'funds' && selectedItem.growth_5y !== null && selectedItem.growth_5y !== undefined
+                          ? `${selectedItem.growth_5y >= 0 ? '+' : ''}${selectedItem.growth_5y.toFixed(1)}%`
+                          : 'N/A'
+                        }
+                      </div>
+                    </div>
+                    <div>
                       <div className="text-sm text-gray-500 mb-1">{activeTab === 'advisers' ? 'Type' : 'Adviser'}</div>
-                      <div className="text-2xl font-bold text-gray-900 truncate">
+                      <div className="text-xl font-bold text-gray-900 truncate">
                         {activeTab === 'advisers' ? (selectedItem.Type || 'N/A') : (selectedItem.Adviser_Entity_Legal_Name || 'N/A')}
                       </div>
                     </div>
                     <div>
                       <div className="text-sm text-gray-500 mb-1">{activeTab === 'advisers' ? 'CRD' : 'Fund ID'}</div>
-                      <div className="text-2xl font-bold text-gray-900">{activeTab === 'advisers' ? selectedItem.CRD : selectedItem.Fund_ID}</div>
+                      <div className="text-xl font-bold text-gray-900">{activeTab === 'advisers' ? selectedItem.CRD : selectedItem.Fund_ID}</div>
                     </div>
                   </div>
 
@@ -774,6 +800,9 @@ const FundAnalyzer = () => {
                   <div className="space-y-3">
                     {(() => {
                       const chartData = getChartData(selectedItem, activeTab === 'funds');
+                      if (chartData.length === 0) {
+                        return <div className="text-sm text-gray-500">No historical data available</div>;
+                      }
                       const maxValue = Math.max(...chartData.map(d => d.value));
                       return chartData.map((item, idx) => (
                         <div key={idx}>
